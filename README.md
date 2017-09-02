@@ -9,8 +9,8 @@ The best and most comprehensive links for MNA on the web:
 
 the network is labeled:
 
-|rows/columns->|0|1|2|...|c-1
-|-|
+|rows/columns->|0|1|2|...|c-1|
+|---|---|---|---|---|---|
 |0|0 |1  |2  | ... |c-1 |
 |1|c |c+1|c+2|...|c+c-1|
 |2|2c|2c+1|...|...|2c+c-1|
