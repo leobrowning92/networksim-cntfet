@@ -88,8 +88,7 @@ class Network(object):
     def make_z(self):
         r=self.network_rows
         c=self.network_columns
-        Vsrc=self.voltage_sources
-        return np.append(np.zeros((r*c-1,1)),Vsrc[:,1][:,None],axis=0)
+        return np.append(np.zeros((r*c-len(self.ground_nodes),1)), self.voltage_sources[:,1][:,None], axis=0)
     def get_voltages(self):
         # inserts the ground voltages back into x
         x=np.insert(self.mna_x,self.ground_nodes,0,axis=0)
@@ -103,7 +102,7 @@ class Network(object):
 
 
 
-net=Network(5,5)
+net=Network(10,10,ground_nodes=[55,60],voltage_sources=np.array([[0,5],[3,3]]))
 
 sns.heatmap(np.reshape(net.node_voltages,(net.network_rows, net.network_columns)), linewidths=1, linecolor='grey', annot=True)
 plt.show()
