@@ -18,6 +18,7 @@ the network is labeled:
 |(r-1)*c|(r-1)*c+1|...|...|...|(r-1)*c+c-1=r*c-1|
 
 ## Todo
-- handle multiple ground and voltage source nodes
-- split currents off of x answer
-- reinsert ground 0V values into x
+- consider a way to visualize a current/resistance grid
+- initialize G with some variation
+- have a way to update G
+- consider making transistor objects that get updated based on parameters, or make it all a matrix thing. talk to matthias about this
