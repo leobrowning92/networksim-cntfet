@@ -3,6 +3,12 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 class Network(object):
+    """
+    This class implements a grid network of 1 Ohm resistors
+    and allows specifying of the voltage sources and ground nodes
+    the solve method returns the voltages at all of the nodes and
+    saves them to an internal variable
+    """
     def __init__(self,network_rows, network_columns, ground_nodes=[-1], voltage_sources=np.array([[0,5]])):
         self.network_rows=network_rows
         self.network_columns=network_columns
@@ -13,13 +19,11 @@ class Network(object):
             self.ground_nodes=[self.network_size-1]
 
         self.voltage_sources=voltage_sources
-        self.grid_connections=self.make_grid_connections(self.getG)
+        self.grid_connections=self.make_grid_connections(self.get_trivial_G)
         # to make the matrices necessary for the MNA matrix equation
         self.mna_A=self.make_A()
         self.mna_z=self.make_z()
-        self.mna_x=np.matmul(np.linalg.inv(self.mna_A),self.mna_z)
-        self.node_voltages=self.get_voltages()
-    def getG(self, n1,n2):
+    def get_trivial_G(self, n1,n2):
         """holds enough information to reconstruct r1,c1 to r2,c2 information which equates to physical position"""
         return 1
     def make_grid_connections(self, getG):
@@ -94,15 +98,17 @@ class Network(object):
         x=np.insert(self.mna_x,self.ground_nodes,0,axis=0)
         #splits the source currents from x
         x=x[:-len(self.voltage_sources)]
-
-
+        self.node_voltages=x
         return x
-
-
-
-
-
-net=Network(10,10,ground_nodes=[55,60],voltage_sources=np.array([[0,5],[3,3]]))
-
-sns.heatmap(np.reshape(net.node_voltages,(net.network_rows, net.network_columns)), linewidths=1, linecolor='grey', annot=True)
-plt.show()
+    def solve_mna(self):
+        self.mna_x=np.linalg.solve(self.mna_A,self.mna_z)
+        return self.get_voltages()
+    def show_voltages(self):
+        if not(hasattr(self, 'node_voltages')):
+            #if not already solved, solve network
+            self.solve_mna()
+        sns.heatmap(np.reshape(self.node_voltages,(self.network_rows, self.network_columns)), linewidths=1, linecolor='grey', annot=True,fmt='.2g')
+        plt.show()
+if __name__ == "__main__":
+    net=Network(10,10,ground_nodes=[55,60],voltage_sources=np.array([[0,5],[3,5]]))
+    net.show_voltages()
