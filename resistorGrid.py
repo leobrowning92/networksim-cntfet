@@ -23,7 +23,7 @@ class Network(object):
     the solve method returns the voltages at all of the nodes and
     saves them to an internal variable
     """
-    def __init__(self,network_rows, network_columns, ground_nodes=[-1], voltage_sources=np.array([[0,5]])):
+    def __init__(self,network_rows, network_columns, component, ground_nodes=[-1], voltage_sources=np.array([[0,5]])):
         self.network_rows=network_rows
         self.network_columns=network_columns
         self.network_size=self.network_rows*self.network_columns
@@ -34,7 +34,7 @@ class Network(object):
 
         self.voltage_sources=voltage_sources
         self.edges=self.make_grid_edges()
-        self.components=self.make_resistors()
+        self.components=self.make_components(component)
         # to make the matrices necessary for the MNA matrix equation
         self.mna_G=self.make_G()
         self.mna_A=self.make_A()
@@ -42,22 +42,19 @@ class Network(object):
     def getG_trivial(self, n1,n2):
         """holds enough information to reconstruct r1,c1 to r2,c2 information which equates to physical position"""
         return 1
-    def make_resistors(self):
+    def make_components(self,component):
         n=self.network_size
-        resistors=np.empty((n,n),dtype=object)
+        components=np.empty((n,n),dtype=object)
         for i in range(n):
             for j in range(n):
                 if self.edges[i,j]==1:
-                    resistors[i,j]=Resistor()
-        return resistors
+                    components[i,j]=component()
+        return components
 
     def make_grid_edges(self):
         """makes the array that encodes the connections between nodes and
         their conductance for a grid where every node is connected to its
         neerest neighbor.
-
-        the network is labeled from 0 to r*c-1
-        to translate from r,c network index to i,j connection index.
 
         note: for the n*n matrix (n=r*c) and point i,j:
         j=i+1 is the conductance to the node to the right of point i
@@ -144,6 +141,6 @@ class Network(object):
         sns.heatmap(np.reshape(self.node_voltages,(self.network_rows, self.network_columns)), linewidths=1, linecolor='grey', annot=True,fmt='.2g')
         plt.show()
 if __name__ == "__main__":
-    net=Network(20,20,ground_nodes=[55,60],voltage_sources=np.array([[0,5],[3,5]]))
+    net=Network(20,20,Resistor,ground_nodes=[55,60],voltage_sources=np.array([[0,5],[3,5]]))
     net.solve_mna()
     net.show_voltages()
