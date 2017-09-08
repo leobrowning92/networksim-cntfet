@@ -1,7 +1,21 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-
+class FET(object):
+    def __init__(self, on_conductance=1., off_conductance=0.1, threshold_voltage=-1.):
+        self.on_conductance=on_conductance
+        self.off_conductance=off_conductance
+        self.threshold_voltage=threshold_voltage
+    def get_conductance(self,gate_voltage):
+        if gate_voltage<=self.threshold_voltage:
+            return self.on_conductance
+        else:
+            return self.off_conductance
+class Resistor(object):
+    def __init__(self):
+        self.conductance=1
+    def get_conductance(self):
+        return self.conductance
 class Network(object):
     """
     This class implements a grid network of 1 Ohm resistors
@@ -19,14 +33,25 @@ class Network(object):
             self.ground_nodes=[self.network_size-1]
 
         self.voltage_sources=voltage_sources
-        self.grid_connections=self.make_grid_connections(self.get_trivial_G)
+        self.edges=self.make_grid_edges()
+        self.components=self.make_resistors()
         # to make the matrices necessary for the MNA matrix equation
+        self.mna_G=self.make_G()
         self.mna_A=self.make_A()
         self.mna_z=self.make_z()
-    def get_trivial_G(self, n1,n2):
+    def getG_trivial(self, n1,n2):
         """holds enough information to reconstruct r1,c1 to r2,c2 information which equates to physical position"""
         return 1
-    def make_grid_connections(self, getG):
+    def make_resistors(self):
+        n=self.network_size
+        resistors=np.empty((n,n),dtype=object)
+        for i in range(n):
+            for j in range(n):
+                if self.edges[i,j]==1:
+                    resistors[i,j]=Resistor()
+        return resistors
+
+    def make_grid_edges(self):
         """makes the array that encodes the connections between nodes and
         their conductance for a grid where every node is connected to its
         neerest neighbor.
@@ -42,44 +67,53 @@ class Network(object):
         # define symbols
         r=self.network_rows
         c=self.network_columns
-        n=r*c
-        Gvalues=np.zeros((n,n))
+        n=self.network_size
+        connections=np.zeros((n,n))
         for i in range(n):
             for j in range(n):
                 if i in [x for x in range(0,c-1)]: #top row
                     if i==0 and j in [i+1,i+c]:#top left
-                        Gvalues[i,j]=getG(i,j)
+                        connections[i,j]=1
                     elif i==(c-1) and j in [i-1,i+c]:#top right
-                        Gvalues[i,j]=getG(i,j)
+                        Gconnections[i,j]=1
                     elif j in [i-1,i+1,i+c]: #all other top
-                        Gvalues[i,j]=getG(i,j)
+                        connections[i,j]=1
                 elif i in [x for x in range((n-1)*n,n*n)]: #bottom row
                     if i==(r-1)*c and j in[i+1,i-c]: #bottom left
-                        Gvalues[i,j]=getG(i,j)
+                        connections[i,j]=1
                     elif i==r*c-1 and j in[i-1,i-c]: #bottom right
-                        Gvalues[i,j]=getG(i,j)
+                        connections[i,j]=1
                     elif j in [i-1,i+1,i-c]: #all other bottom
-                        Gvalues[i,j]=getG(i,j)
+                        connections[i,j]=1
                 elif i%c==0: #left side
                     if j in [i+1,i+c,i-c]:
-                        Gvalues[i,j]=getG(i,j)
+                        connections[i,j]=1
                 elif (i+1)%c==0: # right side
                     if j in [i-1,i+c,i-c]:
-                        Gvalues[i,j]=getG(i,j)
+                        connections[i,j]=1
                 else:
                     if j in [i+1,i-1,i+c,i-c]:
-                        Gvalues[i,j]=getG(i,j)
-        return Gvalues
-    def make_A(self):
-        # define symbols
-        gnd=self.ground_nodes
-        Vsrc=self.voltage_sources
-        G=self.grid_connections
+                        connections[i,j]=1
+        return connections
+    def make_G(self):
         n=self.network_size
+        G=np.zeros((n,n))
+        for i in range(n):
+            for j in range(n):
+                if self.edges[i,j]==1:
+                    G[i,j]=self.components[i,j].get_conductance()
         for i in range(n):
             for j in range(n):
                 if i==j:
                     G[i,j]=-sum(G[i])
+        return G
+    def make_A(self):
+        # define symbols
+        gnd=self.ground_nodes
+        Vsrc=self.voltage_sources
+        G=self.mna_G
+        n=self.network_size
+
         G=np.delete(np.delete(G,gnd,0),gnd,1)
         n=len(G)
         B=np.zeros((n,len(Vsrc)))
@@ -110,5 +144,6 @@ class Network(object):
         sns.heatmap(np.reshape(self.node_voltages,(self.network_rows, self.network_columns)), linewidths=1, linecolor='grey', annot=True,fmt='.2g')
         plt.show()
 if __name__ == "__main__":
-    net=Network(10,10,ground_nodes=[55,60],voltage_sources=np.array([[0,5],[3,5]]))
+    net=Network(20,20,ground_nodes=[55,60],voltage_sources=np.array([[0,5],[3,5]]))
+    net.solve_mna()
     net.show_voltages()

@@ -19,6 +19,6 @@ the network is labeled:
 
 ## Todo
 - consider a way to visualize a current/resistance grid
-- initialize G with some variation
-- have a way to update G
-- consider making transistor objects that get updated based on parameters, or make it all a matrix thing. talk to matthias about this
+- Impliment Updateable objects such as FETs/Memristors
+- have update matrix U that changes/replaces G to allow for change ie switching
+- have U made/updated by querying the edge objects that make up the network
