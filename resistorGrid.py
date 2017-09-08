@@ -14,7 +14,7 @@ class FET(object):
 class Resistor(object):
     def __init__(self):
         self.conductance=1
-    def get_conductance(self):
+    def get_conductance(self,dummy):
         return self.conductance
 class Network(object):
     """
@@ -24,9 +24,12 @@ class Network(object):
     saves them to an internal variable
     """
     def __init__(self,network_rows, network_columns, component, ground_nodes=[-1], voltage_sources=np.array([[0,5]])):
+        #network parameters
         self.network_rows=network_rows
         self.network_columns=network_columns
         self.network_size=self.network_rows*self.network_columns
+
+        #set network parameters
         if all(x>=0 for x in ground_nodes):
             self.ground_nodes=ground_nodes
         else:
@@ -34,7 +37,9 @@ class Network(object):
 
         self.voltage_sources=voltage_sources
         self.edges=self.make_grid_edges()
+        self.gate_voltage=0
         self.components=self.make_components(component)
+
         # to make the matrices necessary for the MNA matrix equation
         self.mna_G=self.make_G()
         self.mna_A=self.make_A()
@@ -50,7 +55,6 @@ class Network(object):
                 if self.edges[i,j]==1:
                     components[i,j]=component()
         return components
-
     def make_grid_edges(self):
         """makes the array that encodes the connections between nodes and
         their conductance for a grid where every node is connected to its
@@ -98,7 +102,7 @@ class Network(object):
         for i in range(n):
             for j in range(n):
                 if self.edges[i,j]==1:
-                    G[i,j]=self.components[i,j].get_conductance()
+                    G[i,j]=self.components[i,j].get_conductance(self.gate_voltage)
         for i in range(n):
             for j in range(n):
                 if i==j:
@@ -111,22 +115,25 @@ class Network(object):
         G=self.mna_G
         n=self.network_size
 
-        G=np.delete(np.delete(G,gnd,0),gnd,1)
-        n=len(G)
+
         B=np.zeros((n,len(Vsrc)))
         for i in range(n):
                 if i in Vsrc[:,0]:
                     B[i,list(Vsrc[:,0]).index(i)]=1
         D=np.zeros((len(Vsrc),len(Vsrc)))
         BTD=np.append(B.T,D,axis=1)
-        return np.append(np.append(G,B,axis=1),BTD,axis=0)
+        A=np.append(np.append(G,B,axis=1),BTD,axis=0)
+        A=np.delete(np.delete(A,gnd,0),gnd,1)
+        return A
     def make_z(self):
         r=self.network_rows
         c=self.network_columns
         return np.append(np.zeros((r*c-len(self.ground_nodes),1)), self.voltage_sources[:,1][:,None], axis=0)
     def get_voltages(self):
         # inserts the ground voltages back into x
-        x=np.insert(self.mna_x,self.ground_nodes,0,axis=0)
+        x=self.mna_x
+        for i in self.ground_nodes:
+            x=np.insert(x,i,0,axis=0)
         #splits the source currents from x
         x=x[:-len(self.voltage_sources)]
         self.node_voltages=x
@@ -140,7 +147,16 @@ class Network(object):
             self.solve_mna()
         sns.heatmap(np.reshape(self.node_voltages,(self.network_rows, self.network_columns)), linewidths=1, linecolor='grey', annot=True,fmt='.2g')
         plt.show()
+    def set_gate(self,gate):
+        n=self.network_size
+        vg=np.empty((n,n))
+        for i in range(n):
+            for j in range(n):
+                if self.edges[i,j]:
+                    vg[i,j]=gate
+        self.gate_voltage=vg
+
 if __name__ == "__main__":
-    net=Network(20,20,Resistor,ground_nodes=[55,60],voltage_sources=np.array([[0,5],[3,5]]))
+    net=Network(20,20,Resistor,ground_nodes=[139,279],voltage_sources=np.array([[120,5],[260,5]]))
     net.solve_mna()
     net.show_voltages()
