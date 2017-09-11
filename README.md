@@ -22,3 +22,4 @@ the network is labeled:
 - Impliment Updateable objects such as FETs/Memristors
 - have update matrix U that changes/replaces G to allow for change ie switching
 - have U made/updated by querying the edge objects that make up the network
+- investigate the networkx package as a way to handle the network to matrix conversions and visualization
