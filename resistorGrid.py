@@ -50,9 +50,9 @@ class Network(object):
         """holds enough information to reconstruct r1,c1 to r2,c2 information which equates to physical position"""
         return 1
     def make_components(self,component):
-        for edge in self.network.edges():
-            self.network.edge[edge[0]][edge[1]]['component']=component()
-            self.network.edge[edge[0]][edge[1]]['conductance']=self.network.edge[edge[0]][edge[1]]['component'].get_conductance(1)
+        for n1,n2 in self.network.edges():
+            self.network.edge[n1][n2]['component']=component()
+            self.network.edge[n1][n2]['conductance']=self.network.edge[n1][n2]['component'].get_conductance(1)
     def make_adjacency_matrix(self):
         adjacency_matrix=nx.to_numpy_matrix(self.network,nodelist=sorted(self.network.nodes()))
         return adjacency_matrix
@@ -85,7 +85,7 @@ class Network(object):
         r=self.network_rows
         c=self.network_columns
         return np.append(np.zeros((r*c-len(self.ground_nodes),1)), self.voltage_sources[:,1][:,None], axis=0)
-    def get_voltages(self):
+    def make_voltages(self):
         # inserts the ground voltages back into x
         x=self.mna_x
         for i in self.ground_nodes:
@@ -93,19 +93,46 @@ class Network(object):
         #splits the source currents from x
         x=x[:-len(self.voltage_sources)]
         self.node_voltages=x
-        return x
+        for node in sorted(self.network.nodes()):
+            self.network.node[node]['voltage']=x[self.network.nodes().index(node)]
+    def get_voltages(self):
+        d=[]
+        for node,data in self.network.nodes(data=True):
+            d.append(data['voltage'])
+        return d
+
+
+
     def solve_mna(self):
         self.mna_x=np.linalg.solve(self.mna_A,self.mna_z)
+        self.update_network()
         return self.get_voltages()
-    def show_voltages(self):
-        if not(hasattr(self, 'node_voltages')):
-            #if not already solved, solve network
-            self.solve_mna()
-        sns.heatmap(np.reshape(self.node_voltages,(self.network_rows, self.network_columns)), linewidths=1, linecolor='grey', annot=True,fmt='.2g')
+    def update_network(self):
+        self.make_voltages()
+        self.make_currents()
+    def show_network(self):
+        r=self.network_rows
+        c=self.network_columns
+        pos={(x//r,x%c):np.array([x//r,x%c]) for x in range(r*c)}
+        edges,weights = zip(*nx.get_edge_attributes(self.network,'current').items())
+
+        nodes,voltages = zip(*nx.get_node_attributes(self.network,'voltage').items())
+
+        nx.draw_networkx(self.network, pos, width=2, nodelist=nodes, node_color=voltages,  cmap=plt.get_cmap('plasma'), edge_cmap=plt.get_cmap('plasma'), edgelist=edges, edge_color=weights, node_size=30, with_labels=False)
         plt.show()
+    def make_currents(self):
+        for n1,n2 in self.network.edges():
+            g = float(self.network.edge[n1][n2]['conductance'])
+            dV = float(self.network.node[n1]['voltage']) - float(self.network.node[n2]['voltage'])
+            self.network.edge[n1][n2]['current']= g * dV
+    def get_currents(self):
+        d=[]
+        for n1,n2,data in self.network.edges(data=True):
+            d.append(float(data['current']))
+        return d
 
 
 if __name__ == "__main__":
     net=Network(20,20,Resistor,ground_nodes=[139,279],voltage_sources=np.array([[120,5],[260,5]]))
     net.solve_mna()
-    net.show_voltages()
+    net.show_network()
