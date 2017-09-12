@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import networkx as nx
 class FET(object):
     def __init__(self, on_conductance=1., off_conductance=0.1, threshold_voltage=-1.):
         self.on_conductance=on_conductance
@@ -36,9 +37,10 @@ class Network(object):
             self.ground_nodes=[self.network_size-1]
 
         self.voltage_sources=voltage_sources
-        self.edges=self.make_grid_edges()
+        self.network=nx.grid_2d_graph(self.network_rows,self.network_columns)
+        self.adjacency_matrix=self.make_adjacency_matrix()
         self.gate_voltage=0
-        self.components=self.make_components(component)
+        self.make_components(component)
 
         # to make the matrices necessary for the MNA matrix equation
         self.mna_G=self.make_G()
@@ -48,61 +50,15 @@ class Network(object):
         """holds enough information to reconstruct r1,c1 to r2,c2 information which equates to physical position"""
         return 1
     def make_components(self,component):
-        n=self.network_size
-        components=np.empty((n,n),dtype=object)
-        for i in range(n):
-            for j in range(n):
-                if self.edges[i,j]==1:
-                    components[i,j]=component()
-        return components
-    def make_grid_edges(self):
-        """makes the array that encodes the connections between nodes and
-        their conductance for a grid where every node is connected to its
-        neerest neighbor.
-
-        note: for the n*n matrix (n=r*c) and point i,j:
-        j=i+1 is the conductance to the node to the right of point i
-        j=i-1 is the conductance to the node to the left of point i
-        j=i-c is the conductance to the node above point i
-        j=i+c is the conductance to the node below point i"""
-        # define symbols
-        r=self.network_rows
-        c=self.network_columns
-        n=self.network_size
-        connections=np.zeros((n,n))
-        for i in range(n):
-            for j in range(n):
-                if i in [x for x in range(0,c-1)]: #top row
-                    if i==0 and j in [i+1,i+c]:#top left
-                        connections[i,j]=1
-                    elif i==(c-1) and j in [i-1,i+c]:#top right
-                        Gconnections[i,j]=1
-                    elif j in [i-1,i+1,i+c]: #all other top
-                        connections[i,j]=1
-                elif i in [x for x in range((n-1)*n,n*n)]: #bottom row
-                    if i==(r-1)*c and j in[i+1,i-c]: #bottom left
-                        connections[i,j]=1
-                    elif i==r*c-1 and j in[i-1,i-c]: #bottom right
-                        connections[i,j]=1
-                    elif j in [i-1,i+1,i-c]: #all other bottom
-                        connections[i,j]=1
-                elif i%c==0: #left side
-                    if j in [i+1,i+c,i-c]:
-                        connections[i,j]=1
-                elif (i+1)%c==0: # right side
-                    if j in [i-1,i+c,i-c]:
-                        connections[i,j]=1
-                else:
-                    if j in [i+1,i-1,i+c,i-c]:
-                        connections[i,j]=1
-        return connections
+        for edge in self.network.edges():
+            self.network.edge[edge[0]][edge[1]]['component']=component()
+            self.network.edge[edge[0]][edge[1]]['conductance']=self.network.edge[edge[0]][edge[1]]['component'].get_conductance(1)
+    def make_adjacency_matrix(self):
+        adjacency_matrix=nx.to_numpy_matrix(self.network,nodelist=sorted(self.network.nodes()))
+        return adjacency_matrix
     def make_G(self):
         n=self.network_size
-        G=np.zeros((n,n))
-        for i in range(n):
-            for j in range(n):
-                if self.edges[i,j]==1:
-                    G[i,j]=self.components[i,j].get_conductance(self.gate_voltage)
+        G=np.array(nx.to_numpy_matrix(self.network,nodelist=sorted(self.network.nodes()),weight='conductance'))
         for i in range(n):
             for j in range(n):
                 if i==j:
@@ -147,14 +103,7 @@ class Network(object):
             self.solve_mna()
         sns.heatmap(np.reshape(self.node_voltages,(self.network_rows, self.network_columns)), linewidths=1, linecolor='grey', annot=True,fmt='.2g')
         plt.show()
-    def set_gate(self,gate):
-        n=self.network_size
-        vg=np.empty((n,n))
-        for i in range(n):
-            for j in range(n):
-                if self.edges[i,j]:
-                    vg[i,j]=gate
-        self.gate_voltage=vg
+
 
 if __name__ == "__main__":
     net=Network(20,20,Resistor,ground_nodes=[139,279],voltage_sources=np.array([[120,5],[260,5]]))
