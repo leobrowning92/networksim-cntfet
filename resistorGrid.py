@@ -1,3 +1,4 @@
+import argparse, unittest
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -91,10 +92,12 @@ class Network(object):
         for i in self.ground_nodes:
             x=np.insert(x,i,0,axis=0)
         #splits the source currents from x
-        x=x[:-len(self.voltage_sources)]
+        x=x[:-1]
         self.node_voltages=x
+        i=0
         for node in sorted(self.network.nodes()):
-            self.network.node[node]['voltage']=x[self.network.nodes().index(node)]
+            self.network.node[node]['voltage']=float(x[i])
+            i+=1
     def get_voltages(self):
         d=[]
         for node,data in self.network.nodes(data=True):
@@ -113,18 +116,29 @@ class Network(object):
     def show_network(self):
         r=self.network_rows
         c=self.network_columns
-        pos={(x//r,x%c):np.array([x//r,x%c]) for x in range(r*c)}
+        pos={}
+        for i in range(r):
+            for j in range(c):
+                pos[(i,j)]=j,i
         edges,weights = zip(*nx.get_edge_attributes(self.network,'current').items())
 
         nodes,voltages = zip(*nx.get_node_attributes(self.network,'voltage').items())
 
-        nx.draw_networkx(self.network, pos, width=2, nodelist=nodes, node_color=voltages,  cmap=plt.get_cmap('plasma'), edge_cmap=plt.get_cmap('plasma'), edgelist=edges, edge_color=weights, node_size=30, with_labels=False)
+        # graph=nx.draw_networkx(self.network, pos, width=2, nodelist=nodes, node_color=voltages,  cmap=plt.get_cmap('plasma'), edge_cmap=plt.get_cmap('plasma'), edgelist=edges, edge_color=weights, node_size=30, with_labels=False)
+        nodes=nx.draw_networkx_nodes(self.network, pos, width=2, nodelist=nodes, node_color=voltages,  cmap=plt.get_cmap('winter'), node_size=30, with_labels=False)
+        edges=nx.draw_networkx_edges(self.network, pos, width=2, edgelist=edges, edge_color=weights,  edge_cmap=plt.get_cmap('autumn'), node_size=30, with_labels=False)
+        plt.colorbar(edges,orientation='horizontal',label="Current")
+        plt.colorbar(nodes,label="Node Voltage")
         plt.show()
     def make_currents(self):
         for n1,n2 in self.network.edges():
+            if n1==(3,3) or n2==(3,3):
+                print(n1,n2)
             g = float(self.network.edge[n1][n2]['conductance'])
             dV = float(self.network.node[n1]['voltage']) - float(self.network.node[n2]['voltage'])
-            self.network.edge[n1][n2]['current']= g * dV
+            # to include current directionality one would have to
+            #replace the abs with some sort of node-node direction rules
+            self.network.edge[n1][n2]['current']= abs(g * dV)
     def get_currents(self):
         d=[]
         for n1,n2,data in self.network.edges(data=True):
@@ -132,7 +146,33 @@ class Network(object):
         return d
 
 
+
+
+class NetworkTest(unittest.TestCase):
+    def setUp(self):
+        self.net=Network(10,10,Resistor,ground_nodes=[9,39,69,99],voltage_sources=np.array([[0,5],[30,5],[60,5],[90,5]]))
+
+    def test_presolve_conductance(self):
+        for n1,n2 in self.net.network.edges():
+            self.assertEqual(self.net.network.edge[n1][n2]["conductance"],1)
+    def test_presolve_voltages(self):
+        # self.net.solve_mna()
+        # print(self.net.network.edge[(0,0)][(0,1)])
+        # print(self.net.network.node[(0,0)])
+        pass
+
+
+    def test_show(self):
+        self.net.solve_mna()
+        self.net.show_network()
+
+
+
+
 if __name__ == "__main__":
-    net=Network(20,20,Resistor,ground_nodes=[139,279],voltage_sources=np.array([[120,5],[260,5]]))
-    net.solve_mna()
-    net.show_network()
+    suite = unittest.TestLoader().loadTestsFromTestCase(NetworkTest)
+    unittest.TextTestRunner(verbosity=2).run(suite)
+
+    # net=Network(3,2,Resistor,ground_nodes=[3],voltage_sources=np.array([[1,5]]))
+    # net.solve_mna()
+    # net.show_network()
