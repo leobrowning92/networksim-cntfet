@@ -1,7 +1,7 @@
-import argparse, unittest
+#!/usr/bin/env python3
+import argparse, unittest, textwrap
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
 import networkx as nx
 class FET(object):
     def __init__(self, on_conductance=1., off_conductance=0.1, threshold_voltage=-1.):
@@ -132,8 +132,6 @@ class Network(object):
         plt.show()
     def make_currents(self):
         for n1,n2 in self.network.edges():
-            if n1==(3,3) or n2==(3,3):
-                print(n1,n2)
             g = float(self.network.edge[n1][n2]['conductance'])
             dV = float(self.network.node[n1]['voltage']) - float(self.network.node[n2]['voltage'])
             # to include current directionality one would have to
@@ -164,14 +162,29 @@ class NetworkTest(unittest.TestCase):
 
     def test_show(self):
         self.net.solve_mna()
-        self.net.show_network()
+        # self.net.show_network()
 
 
 
 
 if __name__ == "__main__":
-    suite = unittest.TestLoader().loadTestsFromTestCase(NetworkTest)
-    unittest.TextTestRunner(verbosity=2).run(suite)
+    parser = argparse.ArgumentParser( formatter_class=argparse.RawDescriptionHelpFormatter, description=textwrap.dedent("""\
+            Description of the various functions available:
+                plotall   -  plots all data for each chip on a seperate plot and store in subdir plots/
+                test      -  simply loads datasets use -i for interactive and -f to force reload"""))
+    parser.add_argument("rows",type=int)
+    parser.add_argument("columns",type=int)
+    parser.add_argument("-t", "--test", action="store_true")
+    parser.add_argument("--show", action="store_true")
+    args = parser.parse_args()
+    if args.rows and args.columns:
+        net=Network(args.rows,args.columns,Resistor,ground_nodes=[args.rows*args.columns],voltage_sources=np.array([[0,5]]))
+        net.solve_mna()
+        if args.show:
+            net.show_network()
+    if args.test:
+        suite = unittest.TestLoader().loadTestsFromTestCase(NetworkTest)
+        unittest.TextTestRunner(verbosity=3).run(suite)
 
     # net=Network(3,2,Resistor,ground_nodes=[3],voltage_sources=np.array([[1,5]]))
     # net.solve_mna()
