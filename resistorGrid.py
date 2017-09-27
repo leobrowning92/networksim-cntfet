@@ -2,6 +2,7 @@
 import argparse, unittest, textwrap
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import networkx as nx
 class FET(object):
     def __init__(self, on_conductance=1., off_conductance=0.1, threshold_voltage=-1.):
@@ -125,10 +126,17 @@ class Network(object):
         nodes,voltages = zip(*nx.get_node_attributes(self.network,'voltage').items())
 
         # graph=nx.draw_networkx(self.network, pos, width=2, nodelist=nodes, node_color=voltages,  cmap=plt.get_cmap('plasma'), edge_cmap=plt.get_cmap('plasma'), edgelist=edges, edge_color=weights, node_size=30, with_labels=False)
-        nodes=nx.draw_networkx_nodes(self.network, pos, width=2, nodelist=nodes, node_color=voltages,  cmap=plt.get_cmap('winter'), node_size=30, with_labels=False)
-        edges=nx.draw_networkx_edges(self.network, pos, width=2, edgelist=edges, edge_color=weights,  edge_cmap=plt.get_cmap('autumn'), node_size=30, with_labels=False)
-        plt.colorbar(edges,orientation='horizontal',label="Current")
-        plt.colorbar(nodes,label="Node Voltage")
+        fig = plt.figure(figsize=(10,20),facecolor='white')
+        ax1=plt.subplot(211)
+        ax2=plt.subplot(212)
+        nodes=nx.draw_networkx_nodes(self.network, pos, width=2, nodelist=nodes, node_color=voltages,  cmap=plt.get_cmap('winter'), node_size=30, with_labels=False, ax=ax1)
+        edges=nx.draw_networkx_edges(self.network, pos, width=2, edgelist=edges, edge_color=weights,  edge_cmap=plt.get_cmap('autumn'), node_size=30, with_labels=False, ax=ax2)
+        divider = make_axes_locatable(ax1)
+        cax1 = divider.append_axes('right', size='5%', pad=0.05)
+        divider = make_axes_locatable(ax2)
+        cax2 = divider.append_axes('right', size='5%', pad=0.05)
+        fig.colorbar(edges,label="Current",cax=cax2)
+        fig.colorbar(nodes,label="Node Voltage",cax=cax1)
         plt.show()
     def make_currents(self):
         for n1,n2 in self.network.edges():
@@ -178,7 +186,7 @@ if __name__ == "__main__":
     parser.add_argument("--show", action="store_true")
     args = parser.parse_args()
     if args.rows and args.columns:
-        net=Network(args.rows,args.columns,Resistor,ground_nodes=[args.rows*args.columns],voltage_sources=np.array([[0,5]]))
+        net=Network(args.rows,args.columns,Resistor,ground_nodes=[args.rows*args.columns-1],voltage_sources=np.array([[0,5]]))
         net.solve_mna()
         if args.show:
             net.show_network()
