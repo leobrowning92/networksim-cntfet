@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import argparse, unittest, textwrap
+import argparse, unittest, textwrap, datetime, os
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -26,13 +26,14 @@ class Network(object):
     the solve method returns the voltages at all of the nodes and
     saves them to an internal variable
     """
-    def __init__(self,network_rows, network_columns, component, ground_nodes=[-1], voltage_sources=np.array([[0,5]])):
+    def __init__(self,network_rows, network_columns, component, ground_nodes=[-1], voltage_sources=np.array([[0,5]]),save=False):
         #network parameters
         self.network_rows=network_rows
         self.network_columns=network_columns
         self.network_size=self.network_rows*self.network_columns
+        self.save=save
 
-        #set network parameters
+        #set network attributes
         if all(x>=0 for x in ground_nodes):
             self.ground_nodes=ground_nodes
         else:
@@ -42,8 +43,9 @@ class Network(object):
         self.network=nx.grid_2d_graph(self.network_rows,self.network_columns)
         self.adjacency_matrix=self.make_adjacency_matrix()
         self.gate_voltage=0
+        self.component=component
         self.make_components(component)
-
+        self.fname=self.make_name()
         # to make the matrices necessary for the MNA matrix equation
         self.mna_G=self.make_G()
         self.mna_A=self.make_A()
@@ -152,26 +154,44 @@ class Network(object):
             d.append(float(data['current']))
         return d
 
+    def save_network(self):
+        nx.write_yaml(self.network,"{}.yaml".format(self.fname))
+    def load_network(self):
+        self.network=nx.read_yaml("{}.yaml".format(self.fname))
+
+    def make_name(self):
+        info="{}x{}net_{}_VG{}".format(self.network_rows,self.network_columns,self.component.__name__, self.gate_voltage)
+        return "{}_{:%Y-%m-%d-%H:%M:%S.%f}".format(info,datetime.datetime.now())
 
 
 
 class NetworkTest(unittest.TestCase):
     def setUp(self):
-        self.net=Network(10,10,Resistor,ground_nodes=[9,39,69,99],voltage_sources=np.array([[0,5],[30,5],[60,5],[90,5]]))
+        self.net=Network(3,3, Resistor)
 
     def test_presolve_conductance(self):
         for n1,n2 in self.net.network.edges():
             self.assertEqual(self.net.network.edge[n1][n2]["conductance"],1)
-    def test_presolve_voltages(self):
-        # self.net.solve_mna()
-        # print(self.net.network.edge[(0,0)][(0,1)])
-        # print(self.net.network.node[(0,0)])
-        pass
+    def test_save(self):
+        self.net.solve_mna()
+        self.net.save_network()
+        self.net.load_network()
+        self.test_solve_stability()
 
+    def test_solve_stability(self):
+        self.net.solve_mna()
+        prenet=self.net.network
+        self.net.solve_mna()
+        postnet=self.net.network
+        self.assertEqual(prenet,postnet)
 
     def test_show(self):
         self.net.solve_mna()
         # self.net.show_network()
+    def tearDown(self):
+        if os.path.isfile("{}.yaml".format(self.net.fname)):
+            os.remove("{}.yaml".format(self.net.fname))
+
 
 
 
@@ -185,12 +205,13 @@ if __name__ == "__main__":
     parser.add_argument("columns",type=int)
     parser.add_argument("-t", "--test", action="store_true")
     parser.add_argument("--show", action="store_true")
+    parser.add_argument("--save")
     args = parser.parse_args()
-    if args.rows and args.columns:
-        net=Network(args.rows,args.columns,Resistor,ground_nodes=[args.rows*args.columns-1],voltage_sources=np.array([[0,5]]))
-        net.solve_mna()
-        if args.show:
-            net.show_network()
+
+    net=Network(args.rows,args.columns,Resistor,ground_nodes=[args.rows*args.columns-1],voltage_sources=np.array([[0,5]]),save=args.save)
+    net.solve_mna()
+    if args.show:
+        net.show_network()
     if args.test:
         suite = unittest.TestLoader().loadTestsFromTestCase(NetworkTest)
         unittest.TextTestRunner(verbosity=3).run(suite)
