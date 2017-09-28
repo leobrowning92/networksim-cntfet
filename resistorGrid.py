@@ -125,12 +125,13 @@ class Network(object):
 
         nodes,voltages = zip(*nx.get_node_attributes(self.network,'voltage').items())
 
-        # graph=nx.draw_networkx(self.network, pos, width=2, nodelist=nodes, node_color=voltages,  cmap=plt.get_cmap('plasma'), edge_cmap=plt.get_cmap('plasma'), edgelist=edges, edge_color=weights, node_size=30, with_labels=False)
         fig = plt.figure(figsize=(10,20),facecolor='white')
         ax1=plt.subplot(211)
         ax2=plt.subplot(212)
+
         nodes=nx.draw_networkx_nodes(self.network, pos, width=2, nodelist=nodes, node_color=voltages,  cmap=plt.get_cmap('winter'), node_size=30, with_labels=False, ax=ax1)
         edges=nx.draw_networkx_edges(self.network, pos, width=2, edgelist=edges, edge_color=weights,  edge_cmap=plt.get_cmap('autumn'), node_size=30, with_labels=False, ax=ax2)
+
         divider = make_axes_locatable(ax1)
         cax1 = divider.append_axes('right', size='5%', pad=0.05)
         divider = make_axes_locatable(ax2)
@@ -193,7 +194,8 @@ if __name__ == "__main__":
     if args.test:
         suite = unittest.TestLoader().loadTestsFromTestCase(NetworkTest)
         unittest.TextTestRunner(verbosity=3).run(suite)
-
+    else:
+        net=Network(3,3,Resistor,ground_nodes=[8],voltage_sources=np.array([[0,5]]))
     # net=Network(3,2,Resistor,ground_nodes=[3],voltage_sources=np.array([[1,5]]))
     # net.solve_mna()
     # net.show_network()
