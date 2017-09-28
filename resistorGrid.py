@@ -163,6 +163,8 @@ class Network(object):
         info="{}x{}net_{}_VG{}".format(self.network_rows,self.network_columns,self.component.__name__, self.gate_voltage)
         return "{}_{:%Y-%m-%d-%H:%M:%S.%f}".format(info,datetime.datetime.now())
 
+    def print_info(self):
+        print("{} rows, {} columns, {} total size".format(self.network_rows, self.network_columns, self.network_size))
 
 
 class NetworkTest(unittest.TestCase):
@@ -210,13 +212,12 @@ if __name__ == "__main__":
 
     net=Network(args.rows,args.columns,Resistor,ground_nodes=[args.rows*args.columns-1],voltage_sources=np.array([[0,5]]),save=args.save)
     net.solve_mna()
+    net.print_info()
     if args.show:
         net.show_network()
     if args.test:
         suite = unittest.TestLoader().loadTestsFromTestCase(NetworkTest)
         unittest.TextTestRunner(verbosity=3).run(suite)
-    else:
-        net=Network(3,3,Resistor,ground_nodes=[8],voltage_sources=np.array([[0,5]]))
     # net=Network(3,2,Resistor,ground_nodes=[3],voltage_sources=np.array([[1,5]]))
     # net.solve_mna()
     # net.show_network()
