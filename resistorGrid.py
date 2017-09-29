@@ -116,7 +116,7 @@ class Network(object):
     def update_network(self):
         self.make_voltages()
         self.make_currents()
-    def show_network(self):
+    def show_network(self,save=False,show=True):
         r=self.network_rows
         c=self.network_columns
         pos={}
@@ -140,7 +140,10 @@ class Network(object):
         cax2 = divider.append_axes('right', size='5%', pad=0.05)
         fig.colorbar(edges,label="Current",cax=cax2)
         fig.colorbar(nodes,label="Node Voltage",cax=cax1)
-        plt.show()
+        if save:
+            plt.savefig("{}.png".format(self.fname))
+        if show:
+            plt.show()
     def make_currents(self):
         for n1,n2 in self.network.edges():
             g = float(self.network.edge[n1][n2]['conductance'])
