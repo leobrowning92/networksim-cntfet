@@ -55,8 +55,8 @@ class Network(object):
         return 1
     def make_components(self,component):
         for n1,n2 in self.network.edges():
-            self.network.edge[n1][n2]['component']=component()
-            self.network.edge[n1][n2]['conductance']=self.network.edge[n1][n2]['component'].get_conductance(1)
+            self.network.edges[n1,n2]['component']=component()
+            self.network.edges[n1,n2]['conductance']=self.network.edges[n1,n2]['component'].get_conductance(1)
     def make_adjacency_matrix(self):
         adjacency_matrix=nx.to_numpy_matrix(self.network,nodelist=sorted(self.network.nodes()))
         return adjacency_matrix
@@ -143,11 +143,11 @@ class Network(object):
         plt.show()
     def make_currents(self):
         for n1,n2 in self.network.edges():
-            g = float(self.network.edge[n1][n2]['conductance'])
+            g = float(self.network.edges[n1,n2]['conductance'])
             dV = float(self.network.node[n1]['voltage']) - float(self.network.node[n2]['voltage'])
             # to include current directionality one would have to
             #replace the abs with some sort of node-node direction rules
-            self.network.edge[n1][n2]['current']= abs(g * dV)
+            self.network.edges[n1,n2]['current']= abs(g * dV)
     def get_currents(self):
         d=[]
         for n1,n2,data in self.network.edges(data=True):
@@ -173,7 +173,7 @@ class NetworkTest(unittest.TestCase):
 
     def test_presolve_conductance(self):
         for n1,n2 in self.net.network.edges():
-            self.assertEqual(self.net.network.edge[n1][n2]["conductance"],1)
+            self.assertEqual(self.net.network.edges[n1,n2]["conductance"],1)
     def test_save(self):
         self.net.solve_mna()
         self.net.save_network()

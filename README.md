@@ -23,3 +23,14 @@ the network is labeled:
 - have update matrix U that changes/replaces G to allow for change ie switching
 - have U made/updated by querying the edge objects that make up the network
 - investigate the networkx package as a way to handle the network to matrix conversions and visualization
+
+## flow
+- make network with connections
+- add components to edges
+- make adjacency matrix from conductance of components
+    - components must have a way to calculate conductance
+- make mna matrix with additional data about sources and ground_nodes
+- solve mna
+- move mna solutions back to physical network, so that nodes have voltages,
+and edges have currents
+- update components and resolve
