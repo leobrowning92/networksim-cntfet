@@ -44,19 +44,15 @@ class Network(object):
         self.adjacency_matrix=self.make_adjacency_matrix()
         self.gate_voltage=0
         self.component=component
-        self.make_components(component)
+        self.add_components(component)
         self.fname=self.make_name()
-        # to make the matrices necessary for the MNA matrix equation
-        self.mna_G=self.make_G()
-        self.mna_A=self.make_A()
-        self.mna_z=self.make_z()
     def getG_trivial(self, n1,n2):
         """holds enough information to reconstruct r1,c1 to r2,c2 information which equates to physical position"""
         return 1
-    def make_components(self,component):
+    def add_components(self,component):
         for n1,n2 in self.network.edges():
-            self.network.edge[n1][n2]['component']=component()
-            self.network.edge[n1][n2]['conductance']=self.network.edge[n1][n2]['component'].get_conductance(1)
+            self.network.edges[n1,n2]['component']=component()
+            self.network.edges[n1,n2]['conductance']=self.network.edges[n1,n2]['component'].get_conductance(1)
     def make_adjacency_matrix(self):
         adjacency_matrix=nx.to_numpy_matrix(self.network,nodelist=sorted(self.network.nodes()))
         return adjacency_matrix
@@ -72,7 +68,7 @@ class Network(object):
         # define symbols
         gnd=self.ground_nodes
         Vsrc=self.voltage_sources
-        G=self.mna_G
+        G=self.make_G()
         n=self.network_size
 
 
@@ -106,16 +102,30 @@ class Network(object):
         for node,data in self.network.nodes(data=True):
             d.append(data['voltage'])
         return d
-
+    def make_currents(self):
+        for n1,n2 in self.network.edges():
+            g = float(self.network.edges[n1,n2]['conductance'])
+            dV = float(self.network.node[n1]['voltage']) - float(self.network.node[n2]['voltage'])
+            # to include current directionality one would have to
+            #replace the abs with some sort of node-node direction rules
+            self.network.edges[n1,n2]['current']= abs(g * dV)
+    def get_currents(self):
+        d=[]
+        for n1,n2,data in self.network.edges(data=True):
+            d.append(float(data['current']))
+        return d
 
 
     def solve_mna(self):
-        self.mna_x=np.linalg.solve(self.mna_A,self.mna_z)
+        mna_A=self.make_A()
+        mna_z=self.make_z()
+        self.mna_x=np.linalg.solve(mna_A,mna_z)
         self.update_network()
         return self.get_voltages()
     def update_network(self):
         self.make_voltages()
         self.make_currents()
+
     def show_network(self,save=False,show=True):
         r=self.network_rows
         c=self.network_columns
@@ -161,11 +171,9 @@ class Network(object):
         nx.write_yaml(self.network,"{}.yaml".format(self.fname))
     def load_network(self):
         self.network=nx.read_yaml("{}.yaml".format(self.fname))
-
     def make_name(self):
         info="{}x{}net_{}_VG{}".format(self.network_rows,self.network_columns,self.component.__name__, self.gate_voltage)
         return "{}_{:%Y-%m-%d-%H:%M:%S.%f}".format(info,datetime.datetime.now())
-
     def print_info(self):
         print("{} rows, {} columns, {} total size".format(self.network_rows, self.network_columns, self.network_size))
 
@@ -176,7 +184,7 @@ class NetworkTest(unittest.TestCase):
 
     def test_presolve_conductance(self):
         for n1,n2 in self.net.network.edges():
-            self.assertEqual(self.net.network.edge[n1][n2]["conductance"],1)
+            self.assertEqual(self.net.network.edges[n1,n2]["conductance"],1)
     def test_save(self):
         self.net.solve_mna()
         self.net.save_network()
