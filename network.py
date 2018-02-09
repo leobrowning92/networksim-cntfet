@@ -29,8 +29,8 @@ class Network(object):
     def check_values(self):
         # ensures there are some non ground/source nodes
         assert len(self.voltage_sources) + len(self.ground_nodes) < self.network_size, "there are more voltage sources and ground nodes than network nodes"
-        assert self.ground_nodes<self.network_size, "ground nodes out of graph index"
-        assert self.voltage_sources[:,0]<self.network_size, "ground nodes out of graph index"
+        assert len(self.ground_nodes)<self.network_size, "ground nodes out of graph index"
+        assert len(self.voltage_sources[:,0])<self.network_size, "ground nodes out of graph index"
 
     def make_G(self):
         """Generates the adjacency matrix of the graph as a numpy array and then sets the diagonal elements as the -ve sum of the conductances that attach to it.
@@ -59,8 +59,23 @@ class Network(object):
         mna_x=np.linalg.solve(self.make_A(self.make_G()), self.make_z())
         return mna_x
     def update_graph(self):
+        #process mna_x to seperate out relevant components
         mna_x = self.solve_mna()
-        pass
+        for i in self.ground_nodes:
+            mna_x=np.insert(mna_x,i,0,axis=0)
+        source_currents=mna_x[-len(self.voltage_sources)]
+        mna_x=mna_x[:-len(self.voltage_sources)]
+        # update graph nodes with voltage values
+        i=0
+        for index in self.graph.node():
+            self.graph.node[index]['voltage']=float(mna_x[i])
+            i+=1
+        #update graph edges with current values
+        for n1,n2 in self.graph.edges():
+            g = float(self.graph.edges[n1,n2]['component'].get_conductance())
+            dV = float(self.graph.node[n1]['voltage']) - float(self.graph.node[n2]['voltage'])
+            self.graph.edges[(n1,n2)]['current']=abs(g*dV)
+
 
 
 
@@ -70,6 +85,7 @@ class Network(object):
 
 
 class NetworkTest_twobytwo(unittest.TestCase):
+    # can write a test to compare the source currents from mna_x with the currents out of source nodes, and also compare the currents into ground nodes and out of source nodes
     def setUp(self):
         self.net=Network(2,2, Resistor,[3],[[0,5]])
         self.testG = np.array(
