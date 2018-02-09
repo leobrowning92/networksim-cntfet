@@ -2,6 +2,9 @@
 import unittest, argparse
 import networkx as nx
 import numpy as np
+import matplotlib
+matplotlib.use("Qt5Agg")
+import matplotlib.pyplot as plt
 
 class Resistor(object):
     def __init__(self,R=1):
