@@ -6,4 +6,5 @@ numpy==1.14.0
 pyparsing==2.2.0
 python-dateutil==2.6.1
 pytz==2017.3
+PyQt5==5.10
 six==1.11.0

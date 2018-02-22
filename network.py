@@ -2,6 +2,8 @@
 import unittest, argparse
 import networkx as nx
 import numpy as np
+import matplotlib
+matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 class Resistor(object):
