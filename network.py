@@ -2,15 +2,8 @@
 import unittest, argparse
 import networkx as nx
 import numpy as np
-<<<<<<< HEAD
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-=======
-import matplotlib
-matplotlib.use("Qt5Agg")
-import matplotlib.pyplot as plt
->>>>>>> 9d484cb6ede5a2a958bb747a1dcbe7019f74bb7d
-
 class Resistor(object):
     def __init__(self,R=1):
         self.conductance=1/R
