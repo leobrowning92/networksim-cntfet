@@ -2,6 +2,8 @@
 import unittest, argparse
 import networkx as nx
 import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 class Resistor(object):
     def __init__(self,R=1):
@@ -22,7 +24,7 @@ class Network(object):
         #add the components
         for edge in self.graph.edges():
             self.graph.edges[edge]['component']=component()
-
+        self.update_conductance()
     def check_values(self):
         # ensures there are some non ground/source nodes
         assert len(self.voltage_sources) + len(self.ground_nodes) < self.network_size, "there are more voltage sources and ground nodes than network nodes"
@@ -55,12 +57,58 @@ class Network(object):
     def solve_mna(self):
         mna_x=np.linalg.solve(self.make_A(self.make_G()), self.make_z())
         return mna_x
+    def update_conductance(self):
+        for edge in self.graph.edges:
+            self.graph.edges[edge]['conductance']=self.graph.edges[edge]['component'].get_conductance()
+    def update_voltages(self,x):
+        for i in self.ground_nodes:
+            x=np.insert(x,i,0,axis=0)
+        x=x[:-len(self.voltage_sources)]
+        i=0
+        for node in sorted(self.graph.nodes()):
+            self.graph.nodes[node]['voltage']=float(x[i])
+            i+=1
+    def update_currents(self):
+        for n1,n2 in self.graph.edges:
+            g = float(self.graph.edges[n1,n2]['conductance'])
+            dV = float(self.graph.nodes[n1]['voltage']) - float(self.graph.nodes[n2]['voltage'])
+            # to include current directionality one would have to
+            #replace the abs with some sort of node-node direction rules
+            self.graph.edges[n1,n2]['current']= g * dV
     def update_graph(self):
         mna_x = self.solve_mna()
+        self.update_voltages(mna_x)
+        self.update_currents()
+        self.show_network()
         pass
 
+    def show_network(self):
+        pos={}
+        for i in range(self.network_rows):
+            for j in range(self.network_columns):
+                pos[(i,j)]=j,i
+        edges,currents = zip(*nx.get_edge_attributes(self.graph,'current').items())
 
+        nodes,voltages = zip(*nx.get_node_attributes(self.graph,'voltage').items())
+        fig = plt.figure(figsize=(10,10),facecolor='white')
+        ax=plt.subplot(111)
+        nodes=nx.draw_networkx_nodes(self.graph, pos, width=2,nodelist=nodes, node_color=voltages,  cmap=plt.get_cmap('winter'), node_size=30, ax=ax)
+        edges=nx.draw_networkx_edges(self.graph, pos, width=2, edgelist=edges, edge_color=currents,  edge_cmap=plt.get_cmap('autumn'), ax=ax)
+        divider = make_axes_locatable(ax)
 
+        nodelabels=nx.get_node_attributes(self.graph,'voltage')
+        nx.draw_networkx_labels(self.graph,pos,labels={k:'{}={:.1f}'.format(k,nodelabels[k]) for k in nodelabels})
+
+        edgelabels=nx.get_edge_attributes(self.graph,'current')
+        print({k:'{:.1f}'.format(edgelabels[k]) for k in edgelabels})
+        nx.draw_networkx_edge_labels(self.graph,pos,edge_labels={k:'{:.1f}'.format(edgelabels[k]) for k in edgelabels})
+        # print({k:'{}={:.1f}'.format(k,edgelabels[k]) for k in edgelabels})
+        # nx.draw_networkx_edge_labels(self.graph,pos,labels={k:'{}={:.1f}'.format(k,edgelabels[k]) for k in edgelabels})
+        cax1 = divider.append_axes('right', size='5%', pad=0.5)
+        cax2 = divider.append_axes('left', size='5%', pad=0.5)
+        fig.colorbar(edges,label="Current",cax=cax2)
+        fig.colorbar(nodes,label="Node Voltage",cax=cax1)
+        plt.show()
 
 
 
@@ -105,3 +153,6 @@ if __name__ == "__main__":
     if args.test:
         suite = unittest.TestLoader().loadTestsFromTestCase(NetworkTest_twobytwo)
         unittest.TextTestRunner(verbosity=3).run(suite)
+    else:
+        net=Network(3,3,Resistor,[5],[[0,5]])
+        net.update_graph()
