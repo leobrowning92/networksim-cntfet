@@ -108,7 +108,7 @@ class Network(object):
         # print({k:'{}={:.1f}'.format(k,edgelabels[k]) for k in edgelabels})
         # nx.draw_networkx_edge_labels(self.graph,pos,labels={k:'{}={:.1f}'.format(k,edgelabels[k]) for k in edgelabels})
         cax1 = divider.append_axes('right', size='5%', pad=0.5)
-        cax2 = divider.append_axes('left', size='5%', pad=0.5)
+        cax2 = divider.append_axes('right', size='5%', pad=0.5)
         fig.colorbar(edges,label="Current",cax=cax2)
         fig.colorbar(nodes,label="Node Voltage",cax=cax1)
         plt.show()
