@@ -64,6 +64,8 @@ class Network(object):
     def update_voltages(self,x):
         for i in self.ground_nodes:
             x=np.insert(x,i,0,axis=0)
+        self.source_currents=x[-len(self.voltage_sources):]
+        print(self.source_currents,self.voltage_sources)
         x=x[:-len(self.voltage_sources)]
         i=0
         for node in sorted(self.graph.nodes()):
@@ -146,6 +148,11 @@ class NetworkTest_twobytwo(unittest.TestCase):
         self.assertEqual(self.net.graph.edges[((0,1),(0,0))]["component"].get_conductance(), 1.)
     def tearDown(self):
         pass
+
+    # need to write a test to assert source currents = sum of currents leaving
+    # = sum of currents through ground nodes. Ive checked this visually on a
+    # 3x3 network with 2 sources of diferent voltages, and 2 grounds.
+    # only thing to keep in mind is that the voltage sources can source or sink currentt
 
 
 
