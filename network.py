@@ -2,8 +2,14 @@
 import unittest, argparse
 import networkx as nx
 import numpy as np
+<<<<<<< HEAD
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+=======
+import matplotlib
+matplotlib.use("Qt5Agg")
+import matplotlib.pyplot as plt
+>>>>>>> 9d484cb6ede5a2a958bb747a1dcbe7019f74bb7d
 
 class Resistor(object):
     def __init__(self,R=1):
@@ -28,8 +34,8 @@ class Network(object):
     def check_values(self):
         # ensures there are some non ground/source nodes
         assert len(self.voltage_sources) + len(self.ground_nodes) < self.network_size, "there are more voltage sources and ground nodes than network nodes"
-        assert self.ground_nodes<self.network_size, "ground nodes out of graph index"
-        assert self.voltage_sources[:,0]<self.network_size, "ground nodes out of graph index"
+        assert len(self.ground_nodes)<self.network_size, "ground nodes out of graph index"
+        assert len(self.voltage_sources[:,0])<self.network_size, "ground nodes out of graph index"
 
     def make_G(self):
         """Generates the adjacency matrix of the graph as a numpy array and then sets the diagonal elements as the -ve sum of the conductances that attach to it.
@@ -76,11 +82,13 @@ class Network(object):
             #replace the abs with some sort of node-node direction rules
             self.graph.edges[n1,n2]['current']= g * dV
     def update_graph(self):
+        #process mna_x to seperate out relevant components
         mna_x = self.solve_mna()
         self.update_voltages(mna_x)
         self.update_currents()
         self.show_network()
         pass
+
 
     def show_network(self):
         pos={}
@@ -115,6 +123,7 @@ class Network(object):
 
 
 class NetworkTest_twobytwo(unittest.TestCase):
+    # can write a test to compare the source currents from mna_x with the currents out of source nodes, and also compare the currents into ground nodes and out of source nodes
     def setUp(self):
         self.net=Network(2,2, Resistor,[3],[[0,5]])
         self.testG = np.array(
