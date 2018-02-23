@@ -65,29 +65,27 @@ class Network(object):
         for i in self.ground_nodes:
             x=np.insert(x,i,0,axis=0)
         self.source_currents=x[-len(self.voltage_sources):]
-        print(self.source_currents,self.voltage_sources)
         x=x[:-len(self.voltage_sources)]
-        i=0
-        for node in sorted(self.graph.nodes()):
+        for i in range(len(self.graph.nodes)) :
+            node=sorted(self.graph.nodes())[i]
             self.graph.nodes[node]['voltage']=float(x[i])
-            i+=1
     def update_currents(self):
         for n1,n2 in self.graph.edges:
             g = float(self.graph.edges[n1,n2]['conductance'])
             dV = float(self.graph.nodes[n1]['voltage']) - float(self.graph.nodes[n2]['voltage'])
             # to include current directionality one would have to
             #replace the abs with some sort of node-node direction rules
-            self.graph.edges[n1,n2]['current']= g * dV
-    def update_graph(self):
+            self.graph.edges[n1,n2]['current']= abs(g * dV)
+    def update_graph(self,v=False):
         #process mna_x to seperate out relevant components
         mna_x = self.solve_mna()
         self.update_voltages(mna_x)
         self.update_currents()
-        self.show_network()
+        self.show_network(v=v)
         pass
 
 
-    def show_network(self):
+    def show_network(self,v=False):
         pos={}
         for i in range(self.network_rows):
             for j in range(self.network_columns):
@@ -96,21 +94,18 @@ class Network(object):
 
         nodes,voltages = zip(*nx.get_node_attributes(self.graph,'voltage').items())
         fig = plt.figure(figsize=(10,10),facecolor='white')
-        ax=plt.subplot(111)
-        nodes=nx.draw_networkx_nodes(self.graph, pos, width=2,nodelist=nodes, node_color=voltages,  cmap=plt.get_cmap('winter'), node_size=30, ax=ax)
-        edges=nx.draw_networkx_edges(self.graph, pos, width=2, edgelist=edges, edge_color=currents,  edge_cmap=plt.get_cmap('autumn'), ax=ax)
-        divider = make_axes_locatable(ax)
+        ax1=plt.subplot(111)
+        nodes=nx.draw_networkx_nodes(self.graph, pos, width=2,nodelist=nodes, node_color=voltages,  cmap=plt.get_cmap('YlOrRd'), node_size=30, ax=ax1)
+        edges=nx.draw_networkx_edges(self.graph, pos, width=2, edgelist=edges, edge_color=currents,  edge_cmap=plt.get_cmap('YlGn'), ax=ax1)
 
-        nodelabels=nx.get_node_attributes(self.graph,'voltage')
-        nx.draw_networkx_labels(self.graph,pos,labels={k:'{}={:.1f}'.format(k,nodelabels[k]) for k in nodelabels})
-
-        edgelabels=nx.get_edge_attributes(self.graph,'current')
-        print({k:'{:.1f}'.format(edgelabels[k]) for k in edgelabels})
-        nx.draw_networkx_edge_labels(self.graph,pos,edge_labels={k:'{:.1f}'.format(edgelabels[k]) for k in edgelabels})
-        # print({k:'{}={:.1f}'.format(k,edgelabels[k]) for k in edgelabels})
-        # nx.draw_networkx_edge_labels(self.graph,pos,labels={k:'{}={:.1f}'.format(k,edgelabels[k]) for k in edgelabels})
-        cax1 = divider.append_axes('right', size='5%', pad=0.5)
-        cax2 = divider.append_axes('right', size='5%', pad=0.5)
+        if v:
+            nodelabels=nx.get_node_attributes(self.graph,'voltage')
+            nx.draw_networkx_labels(self.graph,pos,labels={k:'{}\n{:.1f}V'.format(k,nodelabels[k]) for k in nodelabels})
+            edgelabels=nx.get_edge_attributes(self.graph,'current')
+            nx.draw_networkx_edge_labels(self.graph,pos,edge_labels={k:'{:.1f}A'.format(edgelabels[k]) for k in edgelabels})
+        divider1 = make_axes_locatable(ax1)
+        cax1 = divider1.append_axes('right', size='5%', pad=0.5)
+        cax2 = divider1.append_axes('right', size='5%', pad=0.5)
         fig.colorbar(edges,label="Current",cax=cax2)
         fig.colorbar(nodes,label="Node Voltage",cax=cax1)
         plt.show()
@@ -160,10 +155,11 @@ class NetworkTest_twobytwo(unittest.TestCase):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--test", action="store_true")
+    parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
     if args.test:
         suite = unittest.TestLoader().loadTestsFromTestCase(NetworkTest_twobytwo)
         unittest.TextTestRunner(verbosity=3).run(suite)
     else:
-        net=Network(3,3,Resistor,[5],[[0,5]])
-        net.update_graph()
+        net=Network(5,5,Resistor,[18],[[7,5]])
+        net.update_graph(v=args.verbose)
