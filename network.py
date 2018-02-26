@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 class Resistor(object):
     def __init__(self,R=1):
+        self.resistance=R
         self.conductance=1/R
     def get_conductance(self):
         return self.conductance
@@ -76,7 +77,7 @@ class Network(object):
             # to include current directionality one would have to
             #replace the abs with some sort of node-node direction rules
             self.graph.edges[n1,n2]['current']= abs(g * dV)
-    def update_graph(self,v=False):
+    def update(self,v=False):
         #process mna_x to seperate out relevant components
         mna_x = self.solve_mna()
         self.update_voltages(mna_x)
@@ -162,4 +163,4 @@ if __name__ == "__main__":
         unittest.TextTestRunner(verbosity=3).run(suite)
     else:
         net=Network(5,5,Resistor,[18],[[7,5]])
-        net.update_graph(v=args.verbose)
+        net.update(v=args.verbose)
