@@ -32,6 +32,15 @@ class Network(object):
         assert len(self.voltage_sources) + len(self.ground_nodes) < self.network_size, "there are more voltage sources and ground nodes than network nodes"
         assert len(self.ground_nodes)<self.network_size, "ground nodes out of graph index"
         assert len(self.voltage_sources[:,0])<self.network_size, "ground nodes out of graph index"
+    def add_components(self,component):
+        if type(component)==list:
+            # check lengths match
+            # add components manually
+        elif component == None:
+            print("warning, no components added. This will be needed before updating the network")
+            return None
+        else:
+            # add all default components
 
     def make_G(self):
         """Generates the adjacency matrix of the graph as a numpy array and then sets the diagonal elements as the -ve sum of the conductances that attach to it.
