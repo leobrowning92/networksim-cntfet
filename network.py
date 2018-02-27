@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 class Resistor(object):
     def __init__(self,R=1):
+        assert R>0, "ERROR: a component cannot have -ve resistance"
         self.resistance=R
         self.conductance=1/R
     def get_conductance(self):
@@ -24,9 +25,8 @@ class Network(object):
         #make the grid graph
         self.graph=nx.grid_2d_graph(self.network_rows,self.network_columns)
         #add the components
-        for edge in self.graph.edges():
-            self.graph.edges[edge]['component']=component()
-        self.update_conductance()
+        self.add_components(component)
+
     def check_values(self):
         # ensures there are some non ground/source nodes
         assert len(self.voltage_sources) + len(self.ground_nodes) < self.network_size, "there are more voltage sources and ground nodes than network nodes"
@@ -34,13 +34,18 @@ class Network(object):
         assert len(self.voltage_sources[:,0])<self.network_size, "ground nodes out of graph index"
     def add_components(self,component):
         if type(component)==list:
-            # check lengths match
-            # add components manually
+            assert len(component)==len(self.graph.edges), "ERROR: There is a mismatch between the number of components added and the number of graph edges"
+            for i in range(len(self.graph.edges)):
+                self.graph.edges[sorted(self.graph.edges)[i]]['component'] = component[i]
+            self.update_conductivity()
         elif component == None:
-            print("warning, no components added. This will be needed before updating the network")
-            return None
+            print("Warning: No components added. This will be needed before updating the network")
+            for edge in self.graph.edges():
+                self.graph.edges[edge]['component']=None
         else:
-            # add all default components
+            for edge in self.graph.edges():
+                self.graph.edges[edge]['component']=component()
+            self.update_conductivity()
 
     def make_G(self):
         """Generates the adjacency matrix of the graph as a numpy array and then sets the diagonal elements as the -ve sum of the conductances that attach to it.
@@ -68,9 +73,11 @@ class Network(object):
     def solve_mna(self):
         mna_x=np.linalg.solve(self.make_A(self.make_G()), self.make_z())
         return mna_x
-    def update_conductance(self):
+    def update_conductivity(self):
         for edge in self.graph.edges:
-            self.graph.edges[edge]['conductance']=self.graph.edges[edge]['component'].get_conductance()
+            G=self.graph.edges[edge]['component'].get_conductance()
+            self.graph.edges[edge]['conductance']=G
+            self.graph.edges[edge]['resistance']=1/G
     def update_voltages(self,x):
         for i in self.ground_nodes:
             x=np.insert(x,i,0,axis=0)
@@ -88,6 +95,7 @@ class Network(object):
             self.graph.edges[n1,n2]['current']= abs(g * dV)
     def update(self,v=False):
         #process mna_x to seperate out relevant components
+        self.update_conductivity()
         mna_x = self.solve_mna()
         self.update_voltages(mna_x)
         self.update_currents()
@@ -105,14 +113,16 @@ class Network(object):
         nodes,voltages = zip(*nx.get_node_attributes(self.graph,'voltage').items())
         fig = plt.figure(figsize=(10,10),facecolor='white')
         ax1=plt.subplot(111)
+
         nodes=nx.draw_networkx_nodes(self.graph, pos, width=2,nodelist=nodes, node_color=voltages,  cmap=plt.get_cmap('YlOrRd'), node_size=30, ax=ax1)
-        edges=nx.draw_networkx_edges(self.graph, pos, width=2, edgelist=edges, edge_color=currents,  edge_cmap=plt.get_cmap('YlGn'), ax=ax1)
+        edges=nx.draw_networkx_edges(self.graph, pos, width=2, edgelist=edges, edge_color=currents,  edge_cmap=plt.get_cmap('YlGn'), ax=ax1)\
 
         if v:
             nodelabels=nx.get_node_attributes(self.graph,'voltage')
-            nx.draw_networkx_labels(self.graph,pos,labels={k:'{}\n{:.1f}V'.format(k,nodelabels[k]) for k in nodelabels})
-            edgelabels=nx.get_edge_attributes(self.graph,'current')
-            nx.draw_networkx_edge_labels(self.graph,pos,edge_labels={k:'{:.1f}A'.format(edgelabels[k]) for k in edgelabels})
+            nx.draw_networkx_labels(self.graph,pos,labels={k:'{}\n      {:.1e}V'.format(k,nodelabels[k]) for k in nodelabels})
+            edgecurrents=nx.get_edge_attributes(self.graph,'current')
+            edgeresistance=nx.get_edge_attributes(self.graph,'resistance')
+            nx.draw_networkx_edge_labels(self.graph,pos, edge_labels={k:'{:.1e}A\n{:.1e}$\Omega$'.format(edgecurrents[k], edgeresistance[k]) for k in edgecurrents})
         divider1 = make_axes_locatable(ax1)
         cax1 = divider1.append_axes('right', size='5%', pad=0.5)
         cax2 = divider1.append_axes('right', size='5%', pad=0.5)
