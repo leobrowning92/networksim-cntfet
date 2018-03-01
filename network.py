@@ -110,6 +110,12 @@ class Network(object):
     def load_network(self,fname):
         self.graph=nx.read_yaml(fname)
     def show_network(self,v=False):
+
+        fig = plt.figure(figsize=(10,10),facecolor='white')
+        ax1=plt.subplot(111)
+        self.plot_network(ax1,v=v)
+        plt.show()
+    def plot_network(self,ax1,v=False):
         pos={}
         for i in range(self.network_rows):
             for j in range(self.network_columns):
@@ -117,9 +123,6 @@ class Network(object):
         edges,currents = zip(*nx.get_edge_attributes(self.graph,'current').items())
 
         nodes,voltages = zip(*nx.get_node_attributes(self.graph,'voltage').items())
-        fig = plt.figure(figsize=(10,10),facecolor='white')
-        ax1=plt.subplot(111)
-
         nodes=nx.draw_networkx_nodes(self.graph, pos, width=2,nodelist=nodes, node_color=voltages,  cmap=plt.get_cmap('YlOrRd'), node_size=30, ax=ax1)
         edges=nx.draw_networkx_edges(self.graph, pos, width=2, edgelist=edges, edge_color=currents,  edge_cmap=plt.get_cmap('YlGn'), ax=ax1)\
 
@@ -132,9 +135,10 @@ class Network(object):
         divider1 = make_axes_locatable(ax1)
         cax1 = divider1.append_axes('right', size='5%', pad=0.5)
         cax2 = divider1.append_axes('right', size='5%', pad=0.5)
-        fig.colorbar(edges,label="Current",cax=cax2)
-        fig.colorbar(nodes,label="Node Voltage",cax=cax1)
-        plt.show()
+        plt.colorbar(edges,label="Current",cax=cax2)
+        plt.colorbar(nodes,label="Node Voltage",cax=cax1)
+
+
 
 
 
