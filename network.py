@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import unittest, argparse
+import unittest, argparse, time
 import networkx as nx
 import numpy as np
 import matplotlib
@@ -93,16 +93,22 @@ class Network(object):
             # to include current directionality one would have to
             #replace the abs with some sort of node-node direction rules
             self.graph.edges[n1,n2]['current']= abs(g * dV)
-    def update(self,v=False):
+    def update(self,show=True,v=False):
         #process mna_x to seperate out relevant components
         self.update_conductivity()
         mna_x = self.solve_mna()
         self.update_voltages(mna_x)
         self.update_currents()
-        self.show_network(v=v)
+        if show:
+            self.show_network(v=v)
         pass
 
-
+    def save_network(self,fname):
+        fname =fname+"_{}x{}graph.yaml".format(self.network_rows, self.network_columns)
+        nx.write_yaml(self.graph,fname)
+        return fname
+    def load_network(self,fname):
+        self.graph=nx.read_yaml(fname)
     def show_network(self,v=False):
         pos={}
         for i in range(self.network_rows):

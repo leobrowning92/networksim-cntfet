@@ -29,17 +29,22 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
+    tft=Device(20, 20, None,vds=1 )
 
-    tft=Device(20, 30, None,vds=1 )
     print("device created")
     components=[Transistor(1*abs(np.random.normal(1,0.5)), 10*abs(np.random.normal(1,0.5)),np.random.normal(0,0.5)) for x in range(len(tft.graph.edges))]
     tft.add_components(components)
     print("components added")
     tft.set_global_gate(-10)
-    tft.update(v=args.verbose)
+    tft.update(v=args.verbose,show=False)
+    saved=tft.save_network('test')
+
+    test=Device.load_network(fname)
+    test.load_network(saved)
+    test.update(show=True)
     print("on device displayed")
-    tft.set_global_gate(10)
-    tft.update(v=args.verbose)
-    print("off device displayed")
+    # tft.set_global_gate(10)
+    # tft.update(v=args.verbose)
+    # print("off device displayed")
     # tft.set_global_gate(10)
     # tft.update(v=args.verbose)
