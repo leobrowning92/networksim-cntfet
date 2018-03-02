@@ -24,12 +24,12 @@ class Device(Network):
         ground_nodes = [(x+1)*network_columns-1 for x in range(network_rows)]
         voltage_sources = [[x*network_columns,vds] for x in range(network_rows)]
         Network.__init__(self,network_rows, network_columns, component, ground_nodes, voltage_sources)
+        self.vds=vds
         self.update_location()
         self.gate_areas=[]
     def update_location(self):
-        max_dimension=max(self.network_rows,self.network_columns)
         for node in self.graph.nodes:
-            self.graph.nodes[node]['pos'] = [node[1]/max_dimension, node[0]/max_dimension]
+            self.graph.nodes[node]['pos'] = [node[1], node[0]]
         for n1,n2 in self.graph.edges:
             self.graph.edges[(n1,n2)]['pos'] = [ (self.graph.nodes[n1]['pos'][0]+self.graph.nodes[n1]['pos'][0])/2 , (self.graph.nodes[n2]['pos'][1]+self.graph.nodes[n2]['pos'][1])/2 ]
 
@@ -67,10 +67,13 @@ class Device(Network):
         ax1=plt.subplot(111)
         self.plot_network(ax1,v=v)
         self.plot_regions(ax1)
+        ax1.legend()
         plt.show()
     def plot_regions(self,ax):
         for a in self.gate_areas:
-            ax.add_patch(patches.Rectangle((a[0][0],a[0][1]),a[0][2],a[0][3], edgecolor='b', fill=False))
+            ax.add_patch(patches.Rectangle( (a[0][0]-a[0][2]/2,a[0][1]-a[0][3]/2), a[0][2],a[0][3], edgecolor='b', fill=False, label="Local $V_G$ = {} V".format(a[1])))
+        ax.add_patch(patches.Rectangle( (-1/self.network_columns/2,-1/self.network_rows/2), 1/self.network_columns,1+1/self.network_rows, edgecolor='r', fill=False,label="Source = {} V".format(self.vds)))
+        ax.add_patch(patches.Rectangle( (1-1/self.network_columns/2,-1/self.network_rows/2), 1/self.network_columns,1+1/self.network_rows, edgecolor='k', fill=False, label="GND = 0 V"))
 
 
 

@@ -24,6 +24,7 @@ class Network(object):
         self.check_values()
         #make the grid graph
         self.graph=nx.grid_2d_graph(self.network_rows,self.network_columns)
+        self.scale_graph()
         #add the components
         self.add_components(component)
 
@@ -32,6 +33,11 @@ class Network(object):
         assert len(self.voltage_sources) + len(self.ground_nodes) < self.network_size, "there are more voltage sources and ground nodes than network nodes"
         assert len(self.ground_nodes)<self.network_size, "ground nodes out of graph index"
         assert len(self.voltage_sources[:,0])<self.network_size, "ground nodes out of graph index"
+
+    def scale_graph(self):
+        max_dimension=max(self.network_rows,self.network_columns)-1
+        rn={n:(n[0]/max_dimension,n[1]/max_dimension)for n in self.graph.nodes}
+        self.graph=nx.relabel_nodes(self.graph,rn)
     def add_components(self,component):
         if type(component)==list:
             assert len(component)==len(self.graph.edges), "ERROR: There is a mismatch between the number of components added and the number of graph edges"
@@ -116,10 +122,10 @@ class Network(object):
         self.plot_network(ax1,v=v)
         plt.show()
     def plot_network(self,ax1,v=False):
-        pos={}
-        for i in range(self.network_rows):
-            for j in range(self.network_columns):
-                pos[(i,j)]=j,i
+        pos={k:[k[1],k[0]] for k in self.graph.nodes}
+        # for i in range(self.network_rows):
+        #     for j in range(self.network_columns):
+        #         pos[(i,j)]=j,i
         edges,currents = zip(*nx.get_edge_attributes(self.graph,'current').items())
 
         nodes,voltages = zip(*nx.get_node_attributes(self.graph,'voltage').items())
@@ -135,8 +141,8 @@ class Network(object):
         divider1 = make_axes_locatable(ax1)
         cax1 = divider1.append_axes('right', size='5%', pad=0.5)
         cax2 = divider1.append_axes('right', size='5%', pad=0.5)
-        plt.colorbar(edges,label="Current",cax=cax2)
-        plt.colorbar(nodes,label="Node Voltage",cax=cax1)
+        plt.colorbar(edges,label="Current A",cax=cax2)
+        plt.colorbar(nodes,label="Node Voltage V",cax=cax1)
 
 
 
