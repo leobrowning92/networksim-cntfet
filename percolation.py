@@ -4,11 +4,13 @@ import matplotlib
 matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
+from network import ConductionNetwork, Resistor, Transistor
+import networkx as nx
 
 class StickCollection(object):
     def __init__(self,n,l,sticks=None):
         if sticks:
-            self.sticks=self.make_clusters(sticks)
+            self.sticks, self.intersects = self.make_clusters(sticks)
         self.sticks, self.intersects  = self.make_clusters(self.make_sticks(n,l=l))
 
     def check_intersect(self, s1,s2):
@@ -85,7 +87,40 @@ class StickCollection(object):
             ax.scatter(self.intersects.x, self.intersects.y, c="r", s=30, linewidth=0.8, marker="x")
         plt.show()
 
+    def make_test_sticks(self):
+        source=[0.01, 0.5,np.pi/2-1e-6,1,'v']
+        source.append(self.get_ends(source))
+        drain=[.99, 0.5,np.pi/2-1e-6,1,'g']
+        drain.append(self.get_ends(drain))
+        st1=[0.3, 0.5,np.pi/4,1,'s']
+        st1.append(self.get_ends(st1))
+        st2=[0.7, 0.5,-np.pi/4,1,'s']
+        st2.append(self.get_ends(st2))
+        sticks=pd.DataFrame([source]+[st1]+[st2]+[drain],columns=[ "xc", "yc", "angle", "length",'kind', "endarray"])
+        self.sticks, self.intersects  = self.make_clusters(sticks)
+
+    def make_graph(self):
+        self.graph=nx.from_pandas_edgelist(self.intersects, source='stick1',target='stick2',edge_attr=True)
+        self.ground_nodes=[0]
+        self.voltage_sources=[[len(self.sticks)-1,1]]
+        self.populate_graph()
+        return self.graph, self.ground_nodes, self.voltage_sources
+
+    def populate_graph(self):
+        for edge in self.graph.edges():
+            self.graph.edges[edge]['component']=Resistor()
+
+
+    def solve_cnet(self):
+        self.cnet=ConductionNetwork(*self.make_graph())
+        self.cnet.update()
+        print(self.cnet.source_currents)
 # show_sticks(make_sticks(10,l=1))
-collection=StickCollection(50,l=0.5)
-print(len(collection.sticks.cluster.drop_duplicates()))
-collection.show_sticks()
+
+
+
+collection=StickCollection(5,l=0.5)
+collection.make_test_sticks()
+# print(len(collection.sticks.cluster.drop_duplicates()))
+collection.solve_cnet()
+# collection.show_sticks()
