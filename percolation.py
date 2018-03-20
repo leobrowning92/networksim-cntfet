@@ -6,8 +6,11 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 
 class StickCollection(object):
-    def __init__(self,n,l):
-        self.sticks = self.make_clusters(self.make_sticks(n,l=l))
+    def __init__(self,n,l,sticks=None):
+        if sticks:
+            self.sticks=self.make_clusters(sticks)
+        self.sticks, self.intersects  = self.make_clusters(self.make_sticks(n,l=l))
+
     def check_intersect(self, s1,s2):
         #assert that x intervals overlap
         if max(s1[:,0])<min(s2[:,0]):
@@ -34,34 +37,36 @@ class StickCollection(object):
         y1=yc+length/2*np.sin(angle)
         y2=yc-length/2*np.sin(angle)
         return np.array( [ [x1,y1],[x2,y2] ] )
-    def make_stick(self, n,l=None):
-        """makes a stick with [n, xc, yc, angle, length, endarray]
+    def make_stick(self, n,l=None,kind='s'):
+        """makes a stick with [n, xc, yc, angle, length, kind, endarray]
         the end array is of the form [ [x1,y1],[x2,y2] ]"""
         if l:
-            stick=[n,np.random.rand(), np.random.rand(), np.random.rand()*2*np.pi, l]
+            stick=[n,np.random.rand(), np.random.rand(), np.random.rand()*2*np.pi, l,kind]
         else:
-            stick= [n,np.random.rand(), np.random.rand(), np.random.rand()*2*np.pi, abs(np.random.normal(0.66,0.44))/60]
+            stick= [n,np.random.rand(), np.random.rand(), np.random.rand()*2*np.pi, abs(np.random.normal(0.66,0.44))/60,kind]
         stick.append(self.get_ends(stick))
         return stick
 
     def make_sticks(self, n,**kwargs):
-        return pd.DataFrame( [self.make_stick(i,**kwargs) for i in range(n)] ,columns=["n", "xc", "yc", "angle", "length", "endarray"])
+        return pd.DataFrame( [self.make_stick(i,**kwargs) for i in range(n)] ,columns=["n", "xc", "yc", "angle", "length",'kind', "endarray"])
 
     def make_clusters(self, sticks):
         # initializes all sticks in their own cluster
         sticks['cluster']=sticks['n']
-
+        intersects=[]
         # this section might be emberassingly parallel, but it would have to be
         # addapted to add the cluster number of both intersecting sticks to both.
         # then at the end the final cluster is the minimum of all the cluster
         # intersects?
         for i in range(len(sticks)):
             for j in range(i,len(sticks)):
-                if self.check_intersect(sticks.iloc[i].endarray, sticks.iloc[j].endarray):
+                intersection=self.check_intersect(sticks.iloc[i].endarray, sticks.iloc[j].endarray)
+                if intersection:
                     sticks.loc[sticks.cluster==sticks.loc[j,'cluster'],'cluster'] = sticks.loc[i,'cluster']
-        return sticks
+                    intersects.append([i,j,*intersection, sticks.iloc[i].kind+sticks.iloc[j].kind])
+        return sticks,pd.DataFrame(intersects, columns=["stick1",'stick2','x','y','kind'])
 
-    def show_sticks(self):
+    def show_sticks(self,intersects=True):
         sticks=self.sticks
         fig=plt.figure(figsize=(5,5))
         ax=fig.add_subplot(111)
@@ -69,6 +74,8 @@ class StickCollection(object):
         colorpattern=[colors[i] for i in sticks.cluster.values]
         collection=LineCollection(sticks.endarray.values,linewidth=0.5,colors=colorpattern)
         ax.add_collection(collection)
+        if intersects:
+            ax.scatter(self.intersects.x, self.intersects.y, c="r", s=30, linewidth=0.8, marker="x")
         plt.show()
 
 # show_sticks(make_sticks(10,l=1))

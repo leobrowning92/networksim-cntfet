@@ -13,6 +13,7 @@ class Resistor(object):
         self.conductance=1/R
     def get_conductance(self):
         return self.conductance
+        
 class Network(object):
     def __init__(self,network_rows, network_columns, component, ground_nodes, voltage_sources,v=False):
         #network parameters
