@@ -16,6 +16,7 @@ class StickCollection(object):
         if max(s1[:,0])<min(s2[:,0]):
             return False # intervals do not overlap
         #gradients
+
         m1=(s1[0,1]-s1[1,1])/(s1[0,0]-s1[1,0])
         m2=(s2[0,1]-s2[1,1])/(s2[0,0]-s2[1,0])
         #intercepts
@@ -31,28 +32,34 @@ class StickCollection(object):
         else:
             return False
     def get_ends(self, row):
-        xc,yc,angle,length = row[1],row[2],row[3],row[4]
+        xc,yc,angle,length = row[0],row[1],row[2],row[3]
         x1=xc-length/2*np.cos(angle)
         x2=xc+length/2*np.cos(angle)
         y1=yc+length/2*np.sin(angle)
         y2=yc-length/2*np.sin(angle)
-        return np.array( [ [x1,y1],[x2,y2] ] )
-    def make_stick(self, n,l=None,kind='s'):
-        """makes a stick with [n, xc, yc, angle, length, kind, endarray]
+        return np.array([ [x1,y1],[x2,y2] ])
+
+    def make_stick(self,l=None,kind='s'):
+        """makes a stick with [xc, yc, angle, length, kind, endarray]
         the end array is of the form [ [x1,y1],[x2,y2] ]"""
         if l:
-            stick=[n,np.random.rand(), np.random.rand(), np.random.rand()*2*np.pi, l,kind]
+            stick=[np.random.rand(), np.random.rand(), np.random.rand()*2*np.pi, l,kind]
         else:
-            stick= [n,np.random.rand(), np.random.rand(), np.random.rand()*2*np.pi, abs(np.random.normal(0.66,0.44))/60,kind]
+            stick= [np.random.rand(), np.random.rand(), np.random.rand()*2*np.pi, abs(np.random.normal(0.66,0.44))/60,kind]
         stick.append(self.get_ends(stick))
         return stick
 
     def make_sticks(self, n,**kwargs):
-        return pd.DataFrame( [self.make_stick(i,**kwargs) for i in range(n)] ,columns=["n", "xc", "yc", "angle", "length",'kind', "endarray"])
+        # adds a vertical source and drain stick on left and right respectively
+        source=[0.01, 0.5,np.pi/2-1e-6,1,'v']
+        source.append(self.get_ends(source))
+        drain=[.99, 0.5,np.pi/2-1e-6,1,'g']
+        drain.append(self.get_ends(drain))
+        return pd.DataFrame( [source]+[self.make_stick(**kwargs) for i in range(n)]+[drain] ,columns=[ "xc", "yc", "angle", "length",'kind', "endarray"])
 
     def make_clusters(self, sticks):
         # initializes all sticks in their own cluster
-        sticks['cluster']=sticks['n']
+        sticks['cluster']=sticks.index
         intersects=[]
         # this section might be emberassingly parallel, but it would have to be
         # addapted to add the cluster number of both intersecting sticks to both.
@@ -61,7 +68,7 @@ class StickCollection(object):
         for i in range(len(sticks)):
             for j in range(i,len(sticks)):
                 intersection=self.check_intersect(sticks.iloc[i].endarray, sticks.iloc[j].endarray)
-                if intersection:
+                if intersection and 0<=intersection[0]<=1 and 0<=intersection[1]<=1:
                     sticks.loc[sticks.cluster==sticks.loc[j,'cluster'],'cluster'] = sticks.loc[i,'cluster']
                     intersects.append([i,j,*intersection, sticks.iloc[i].kind+sticks.iloc[j].kind])
         return sticks,pd.DataFrame(intersects, columns=["stick1",'stick2','x','y','kind'])
