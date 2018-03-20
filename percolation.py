@@ -102,25 +102,33 @@ class StickCollection(object):
     def make_graph(self):
         self.graph=nx.from_pandas_edgelist(self.intersects, source='stick1',target='stick2',edge_attr=True)
         self.ground_nodes=[0]
-        self.voltage_sources=[[len(self.sticks)-1,1]]
+        self.voltage_sources=[[len(self.sticks)-1,0.1]]
         self.populate_graph()
+        for node in self.graph.nodes():
+            self.graph.nodes[node]['pos'] = [self.sticks.loc[node,'xc'], self.sticks.loc[node,'yc']]
+        for edge in self.graph.edges():
+            self.graph.edges[edge]['pos'] = [self.graph.edges[edge]['x'], self.graph.edges[edge]['y']]
         return self.graph, self.ground_nodes, self.voltage_sources
 
     def populate_graph(self):
         for edge in self.graph.edges():
-            self.graph.edges[edge]['component']=Resistor()
+            self.graph.edges[edge]['component']=Transistor()
 
 
     def solve_cnet(self):
         self.cnet=ConductionNetwork(*self.make_graph())
+        self.cnet.set_global_gate(0)
+        self.cnet.set_local_gate([0.5,.7,0.4,1], 10)
         self.cnet.update()
         print(self.cnet.source_currents)
+        self.cnet.show_device()
 # show_sticks(make_sticks(10,l=1))
 
 
 
-collection=StickCollection(5,l=0.5)
-collection.make_test_sticks()
+collection=StickCollection(100,l=0.5)
+collection.show_sticks()
+# collection.make_test_sticks()
 # print(len(collection.sticks.cluster.drop_duplicates()))
 collection.solve_cnet()
 # collection.show_sticks()
