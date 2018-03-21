@@ -60,8 +60,6 @@ class ConductionNetwork(object):
         BTD=np.append(B.T,D,axis=1)
         A=np.append(np.append(G,B,axis=1),BTD,axis=0)
         A=np.delete(np.delete(A,self.ground_nodes,0),self.ground_nodes,1)
-        plt.matshow(A,vmin=-1,vmax=1)
-        plt.show()
         return A
     def make_z(self):
         z = np.append(np.zeros((self.network_size-len(self.ground_nodes),1)), self.voltage_sources[:,1][:,None], axis=0)
@@ -104,7 +102,7 @@ class ConductionNetwork(object):
             ax=plt.subplot(111)
         self.plot_network(ax,v=v)
         self.plot_regions(ax)
-        ax.legend()
+        # ax.legend()
         if not(ax):
             plt.show()
     def plot_regions(self,ax):

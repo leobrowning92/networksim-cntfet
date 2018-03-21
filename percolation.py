@@ -75,9 +75,12 @@ class StickCollection(object):
                 intersection=self.check_intersect(sticks.iloc[i].endarray, sticks.iloc[j].endarray)
                 if intersection and 0<=intersection[0]<=1 and 0<=intersection[1]<=1:
                     sticks.loc[sticks.cluster==sticks.loc[j,'cluster'],'cluster'] = sticks.loc[i,'cluster']
-                    intersects.append([i,j,*intersection, sticks.iloc[i].kind+sticks.iloc[j].kind])
+                    intersects.append([i,j,*intersection, sticks.iloc[i].kind+sticks.iloc[j].kind],)
         self.percolating=sticks.loc[0,"cluster"]==sticks.loc[len(sticks)-1,"cluster"]
-        return sticks,pd.DataFrame(intersects, columns=["stick1",'stick2','x','y','kind'])
+        intersects=pd.DataFrame(intersects, columns=["stick1",'stick2','x','y','kind'])
+        intersects['cluster']=intersects['stick1'].apply(lambda x: sticks.iloc[x].cluster)
+        return sticks, intersects
+    def
     def show_system(self,clustering=True,junctions=True,conduction=True):
         fig = plt.figure(figsize=(15,5))
         axes=[fig.add_subplot(1,3,i+1) for i in range(3)]
@@ -86,7 +89,7 @@ class StickCollection(object):
         if junctions:
             self.show_sticks(ax=axes[1])
         if conduction and self.percolating:
-            self.solve_cnet()
+            self.make_cnet()
             self.cnet.show_device(ax=axes[2])
         plt.show()
     def show_clusters(self,intersects=True,ax=False):
@@ -140,7 +143,12 @@ class StickCollection(object):
         self.sticks, self.intersects  = self.make_clusters(sticks)
 
     def make_graph(self):
-        self.graph=nx.from_pandas_edgelist(self.intersects, source='stick1',target='stick2',edge_attr=True)
+        # only calculates the conduction through the spanning cluster of sticks
+        # to avoid the creation of a singular adjacency matrix caused by
+        # disconnected junctions becoming unconnected nodes in the cnet
+        dom_cluster=self.intersects[self.intersects.cluster==self.sticks.loc[0,'cluster']]
+
+        self.graph=nx.from_pandas_edgelist(dom_cluster, source='stick1',target='stick2',edge_attr=True)
 
         self.ground_nodes=[len(self.graph)-1]
         self.voltage_sources=[[0,0.1]]
@@ -153,16 +161,17 @@ class StickCollection(object):
 
     def populate_graph(self):
         for edge in self.graph.edges():
+
             self.graph.edges[edge]['component']=Transistor()
 
 
-    def solve_cnet(self):
+    def make_cnet(self):
         assert self.percolating, "The network is not conducting!"
         self.cnet=ConductionNetwork(*self.make_graph())
         # print(self.cnet.make_G(),'\n')
         # print(self.cnet.make_A(self.cnet.make_G()))
         self.cnet.set_global_gate(0)
-        # self.cnet.set_local_gate([0.5,.7,0.4,1], 10)
+        # self.cnet.set_local_gate([0.5,0,0.4,1.2], 10)
         self.cnet.update()
         # print(self.cnet.source_currents)
 
@@ -182,9 +191,8 @@ if __name__ == "__main__":
         collection=StickCollection(10,l=1,pm=args.pm,scaling=1)
         collection.make_test_sticks()
         collection.show_system(conduction=False)
-        collection.solve_cnet()
+        collection.make_cnet()
     else:
         collection=StickCollection(args.number,l=args.length,pm=args.pm,scaling=args.scaling)
-        collection.show_system(conduction=False)
-        collection.solve_cnet()
+        collection.show_system()
         # print(len(collection.sticks.cluster.drop_duplicates()))
