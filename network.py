@@ -1,3 +1,4 @@
+import argparse
 import numpy as np
 import networkx as nx
 import matplotlib
@@ -44,7 +45,7 @@ class ConductionNetwork(object):
     def make_G(self):
         """Generates the adjacency matrix of the graph as a numpy array and then sets the diagonal elements as the -ve sum of the conductances that attach to it.
         """
-        G=np.array(nx.to_numpy_matrix(self.graph,nodelist=sorted(self.graph.nodes()),weight='conductance'))
+        G=np.array(nx.to_numpy_matrix(self.graph,nodelist=self.graph.nodes(),weight='conductance'))
         for i in range(self.network_size):
             for j in range(self.network_size):
                 if i==j:
@@ -59,6 +60,8 @@ class ConductionNetwork(object):
         BTD=np.append(B.T,D,axis=1)
         A=np.append(np.append(G,B,axis=1),BTD,axis=0)
         A=np.delete(np.delete(A,self.ground_nodes,0),self.ground_nodes,1)
+        plt.matshow(A,vmin=-1,vmax=1)
+        plt.show()
         return A
     def make_z(self):
         z = np.append(np.zeros((self.network_size-len(self.ground_nodes),1)), self.voltage_sources[:,1][:,None], axis=0)
@@ -95,18 +98,21 @@ class ConductionNetwork(object):
         ax1=plt.subplot(111)
         self.plot_network(ax1,v=v)
         plt.show()
-    def show_device(self,v=False):
-        fig = plt.figure(figsize=(10,10),facecolor='white')
-        ax1=plt.subplot(111)
-        self.plot_network(ax1,v=v)
-        self.plot_regions(ax1)
-        ax1.legend()
-        plt.show()
+    def show_device(self,v=False,ax=False):
+        if not(ax):
+            fig = plt.figure(figsize=(10,10),facecolor='white')
+            ax=plt.subplot(111)
+        self.plot_network(ax,v=v)
+        self.plot_regions(ax)
+        ax.legend()
+        if not(ax):
+            plt.show()
     def plot_regions(self,ax):
         for a in self.gate_areas:
             ax.add_patch(patches.Rectangle( (a[0][0]-a[0][2]/2,a[0][1]-a[0][3]/2), a[0][2],a[0][3], edgecolor='b', fill=False, label="Local $V_G$ = {} V".format(a[1])))
         ax.add_patch(patches.Rectangle( (-0.02,.48), 0.04,0.04, edgecolor='r', fill=False,label="Source = {} V".format(self.vds)))
-        ax.add_patch(patches.Rectangle( (.98,0.48), 0.04,0.04, edgecolor='k', fill=False, label="GND = 0 V"))
+        ax.add_patch(patches.Rectangle( (.98,0.48), 0.04,0.04, edgecolor='k',
+        fill=False, label="GND = 0 V"))
     def plot_network(self,ax1,v=False):
         pos={k:self.graph.nodes[k]['pos'] for k in self.graph.nodes}
         # for i in range(self.network_rows):
@@ -124,11 +130,11 @@ class ConductionNetwork(object):
             edgecurrents=nx.get_edge_attributes(self.graph,'current')
             edgeresistance=nx.get_edge_attributes(self.graph,'resistance')
             nx.draw_networkx_edge_labels(self.graph,pos, edge_labels={k:'{:.1e}A\n{:.1e}$\Omega$'.format(edgecurrents[k], edgeresistance[k]) for k in edgecurrents})
-        divider1 = make_axes_locatable(ax1)
-        cax1 = divider1.append_axes('right', size='5%', pad=0.5)
-        cax2 = divider1.append_axes('right', size='5%', pad=0.5)
-        plt.colorbar(edges,label="Current A",cax=cax2)
-        plt.colorbar(nodes,label="Node Voltage V",cax=cax1)
+        # divider1 = make_axes_locatable(ax1)
+        # cax1 = divider1.append_axes('right', size='5%', pad=0.5)
+        # cax2 = divider1.append_axes('right', size='5%', pad=0.5)
+        # plt.colorbar(edges,label="Current A",cax=cax2)
+        # plt.colorbar(nodes,label="Node Voltage V",cax=cax1)
     def set_global_gate(self,voltage):
         for edge in self.graph.edges:
             self.graph.edges[edge]['component'].gate_voltage=voltage
