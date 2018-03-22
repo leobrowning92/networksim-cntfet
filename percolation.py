@@ -80,7 +80,7 @@ class StickCollection(object):
         intersects=pd.DataFrame(intersects, columns=["stick1",'stick2','x','y','kind'])
         intersects['cluster']=intersects['stick1'].apply(lambda x: sticks.iloc[x].cluster)
         return sticks, intersects
-    def
+
     def show_system(self,clustering=True,junctions=True,conduction=True):
         fig = plt.figure(figsize=(15,5))
         axes=[fig.add_subplot(1,3,i+1) for i in range(3)]
