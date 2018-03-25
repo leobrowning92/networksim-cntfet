@@ -16,7 +16,8 @@ class StickCollection(object):
     def __init__(self,n,l,sticks=None,pm=0,scaling=1):
         if sticks:
             self.sticks, self.intersects = self.make_clusters(sticks)
-        self.sticks, self.intersects  = self.make_clusters(self.make_sticks(n,l=l,pm=pm,scaling=scaling))
+        self.sticks, self.intersects  = self.make_clusters_kdtree(self.make_sticks(n,l=l,pm=pm,scaling=scaling))
+        self.make_cnet()
 
     def check_intersect(self, s1,s2):
         #assert that x intervals overlap
@@ -106,7 +107,7 @@ class StickCollection(object):
                     if intersection and 0<=intersection[0]<=1 and 0<=intersection[1]<=1:
                         sticks.loc[sticks.cluster==sticks.loc[j,'cluster'],'cluster'] = sticks.loc[i,'cluster']
                         intersects.append([i,j,*intersection, sticks.iloc[i].kind+sticks.iloc[j].kind],)
-        self.percolating=sticks.loc[0,"cluster"]==sticks.loc[len(sticks)-1,"cluster"]
+        self.percolating=sticks.loc[0,"cluster"]==sticks.loc[1,"cluster"]
         intersects=pd.DataFrame(intersects, columns=["stick1",'stick2','x','y','kind'])
         intersects['cluster']=intersects['stick1'].apply(lambda x: sticks.iloc[x].cluster)
         return sticks, intersects
@@ -197,7 +198,7 @@ class StickCollection(object):
         stick_colors=[stick_cmap[i] for i in sticks.kind]
         collection=LineCollection(sticks.endarray.values,linewidth=0.5,colors=stick_colors)
         ax.add_collection(collection)
-        isect_cmap={'ms':'g','sm':'g', 'mm':'k','ss':'k', 'vs':'k','sv':'k','vm':'k', 'sg':'k','gs':'k','mg':'k'}
+        isect_cmap={'ms':'g','sm':'g', 'mm':'k','ss':'k', 'vs':'k','sv':'k','vm':'k', 'sg':'k','gs':'k','mg':'k','gm':'k'}
         isect_colors=[isect_cmap[i] for i in self.intersects.kind]
         ax.scatter(intersects.x, intersects.y, c=isect_colors, s=20, linewidth=1, marker="x")
         ax.set_xlim((-0.02,1.02))
@@ -216,6 +217,7 @@ if __name__ == "__main__":
     parser.add_argument("--scaling",type=float,default=5)
     parser.add_argument("-t", "--test", action="store_true")
     parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument("--show", action="store_true",default=False)
     args = parser.parse_args()
     if args.test:
         collection=StickCollection(args.number,l=0,pm=args.pm,scaling=5)
@@ -223,5 +225,6 @@ if __name__ == "__main__":
 
     else:
         collection=StickCollection(args.number,l=args.length,pm=args.pm,scaling=args.scaling)
-        collection.show_system()
+        if args.show:
+            collection.show_system()
         # print(len(collection.sticks.cluster.drop_duplicates()))

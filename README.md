@@ -17,20 +17,19 @@ the network is labeled:
 |...|...|...|...|...|...|
 |(r-1)*c|(r-1)*c+1|...|...|...|(r-1)*c+c-1=r*c-1|
 
-## Todo
-- consider a way to visualize a current/resistance grid
-- Impliment Updateable objects such as FETs/Memristors
-- have update matrix U that changes/replaces G to allow for change ie switching
-- have U made/updated by querying the edge objects that make up the network
-- investigate the networkx package as a way to handle the network to matrix conversions and visualization
 
-## flow
-- make network with connections
-- add components to edges
-- make adjacency matrix from conductance of components
-    - components must have a way to calculate conductance
-- make mna matrix with additional data about sources and ground_nodes
-- solve mna
-- move mna solutions back to physical network, so that nodes have voltages,
-and edges have currents
-- update components and resolve
+## Optimization
+use cProfile and the [gprof2dot](https://github.com/jrfonseca/gprof2dot).py script to generate profiles of time spent for running the script.
+explicit number to run optimization on is:
+
+    kd_percolation.py 300 --pm 0.135 --length 0 --scaling 5
+
+and corresponds to 300 sticks on a 5um square area with a length distribution of 0.66pm0.44um corresponding to my experimental results. conduction is calculated in each case.
+
+which is run in sequence as:
+    python -m cProfile -o output.pstats kd_percolation.py 300
+    python gprof2dot.py -f pstats output.pstats | dot -Tpng -o output.png
+
+The total run time over 5 or 6 tries is between 14 and 15 seconds (user time) when running `time python kd_percolation.py 300` for the original brute force cluster search.
+
+Using a kdtree with a sorted length list and length dependant search radius the same run times are 3.6 to 3.8 seconds.

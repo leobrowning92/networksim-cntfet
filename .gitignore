@@ -102,4 +102,6 @@ ENV/
 .mypy_cache/
 
 # manages cProfiler and gprof2dot outputs
-output.*
+output.
+
+!speed_milestones/*
