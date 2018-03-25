@@ -67,6 +67,8 @@ class StickCollection(object):
         drain=[.99, 0.5,np.pi/2-1e-6,1,'g']
         drain.append(self.get_ends(drain))
         return pd.DataFrame( [source]+[self.make_stick(**kwargs) for i in range(n)]+[drain] ,columns=[ "xc", "yc", "angle", "length",'kind', "endarray"])
+        # return pd.DataFrame( [self.make_stick(**kwargs) for i in range(n)] ,columns=[ "xc", "yc", "angle", "length",'kind', "endarray"])
+
 
     def make_clusters(self, sticks):
         # initializes all sticks in their own cluster
@@ -107,15 +109,35 @@ class StickCollection(object):
 
         X=sticks.loc[:,'xc':'yc'].values
         tree=spatial.KDTree(X)
-        neighbors=tree.query_ball_point(X,0.2)
+        neighbors=tree.query_ball_point(X,0.25)
         for i in range(len(sticks)):
-                for j in range(len(neighbors[i])):
+                for j in neighbors[i]:
                     # ensures no double counting and self counting
-                    if j>i:
-                        intersection=self.check_intersect(sticks.iloc[i].endarray, sticks.iloc[j].endarray)
-                        if intersection and 0<=intersection[0]<=1 and 0<=intersection[1]<=1:
-                            sticks.loc[sticks.cluster==sticks.loc[j,'cluster'],'cluster'] = sticks.loc[i,'cluster']
-                            intersects.append([i,j,*intersection, sticks.iloc[i].kind+sticks.iloc[j].kind],)
+                    intersection=self.check_intersect(sticks.iloc[i].endarray, sticks.iloc[j].endarray)
+                    if intersection and 0<=intersection[0]<=1 and 0<=intersection[1]<=1:
+                        sticks.loc[sticks.cluster==sticks.loc[j,'cluster'],'cluster'] = sticks.loc[i,'cluster']
+                        intersects.append([i,j,*intersection, sticks.iloc[i].kind+sticks.iloc[j].kind],)
+        self.percolating=sticks.loc[0,"cluster"]==sticks.loc[len(sticks)-1,"cluster"]
+        intersects=pd.DataFrame(intersects, columns=["stick1",'stick2','x','y','kind'])
+        intersects['cluster']=intersects['stick1'].apply(lambda x: sticks.iloc[x].cluster)
+        return sticks, intersects
+    def test_kd2(self,sticks):
+        sticks['cluster']=sticks.index
+        sticks.sort_values('length',inplace=True,ascending=False)
+        sticks=sticks.reset_index(drop=True)
+        intersects=[]
+
+        X=sticks.loc[:,'xc':'yc'].values
+        tree=spatial.KDTree(X)
+        for i in range(len(sticks)):
+            neighbors = tree.query_ball_point(X[i],sticks.loc[i,'length'])
+            for j in neighbors:
+                # ensures no double counting and self counting
+                if i<j:
+                    intersection=self.check_intersect(sticks.iloc[i].endarray, sticks.iloc[j].endarray)
+                    if intersection and 0<=intersection[0]<=1 and 0<=intersection[1]<=1:
+                        sticks.loc[sticks.cluster==sticks.loc[j,'cluster'],'cluster'] = sticks.loc[i,'cluster']
+                        intersects.append([i,j,*intersection, sticks.iloc[i].kind+sticks.iloc[j].kind],)
         self.percolating=sticks.loc[0,"cluster"]==sticks.loc[len(sticks)-1,"cluster"]
         intersects=pd.DataFrame(intersects, columns=["stick1",'stick2','x','y','kind'])
         intersects['cluster']=intersects['stick1'].apply(lambda x: sticks.iloc[x].cluster)
@@ -137,31 +159,54 @@ class StickCollection(object):
         sticks=pd.DataFrame([source]+[st1]+[st2]+[st3]+[st4]+[drain],columns=[ "xc", "yc", "angle", "length",'kind', "endarray"])
         self.sticks, self.intersects  = self.make_clusters(sticks)
     def make_test_sticks(self,n):
-        self.source_sticks=self.make_sticks(n,l=1,scaling=5)
+        self.source_sticks=self.make_sticks(n,l=0,scaling=5)
     def test_cluster_methods(self,n):
-        self.make_test_sticks(n)
+        # print(self.source_sticks)
+        # start = timer()
+        # kd_sticks,kd_intersects=self.test_kdtree(self.source_sticks)
+        # end = timer()
+        # print("kdtree algorithm : {:5.2f}s".format(end - start))
 
         start = timer()
-        kd_sticks,kd_intersects=self.test_kdtree(self.source_sticks)
+        kd2_sticks,kd2_intersects=self.test_kd2(self.source_sticks)
         end = timer()
-        print("kdtree algorithm : {:5.2f}s".format(end - start))
-
+        print("kdtree No.2 algorithm : {:5.2f}s".format(end - start))
         # original brute force method
         start = timer()
         original_sticks,original_intersects=self.make_clusters(self.source_sticks)
         end = timer()
         print("Original algorithm : {:5.2f}s".format(end - start))
 
-        start = timer()
-        rfirst_sticks,rfirst_intersects=self.test_radius_first(self.source_sticks)
-        end = timer()
-        print("radius first algorithm : {:5.2f}s".format(end - start))
-        # print(original_intersects)
-        # print(kd_intersects)
-        assert np.array_equal(kd_sticks.cluster.values, original_sticks.cluster.values)
+        fig=plt.figure(figsize=(15,5))
+        ax1=fig.add_subplot(131)
+        ax2=fig.add_subplot(132)
+        ax3=fig.add_subplot(133)
+        self.show_sticks(original_sticks, original_intersects,ax=ax1)
+        self.show_sticks(kd2_sticks, kd2_intersects,ax=ax2)
+
+
+        self.sticks=kd2_sticks
+        self.intersects=kd2_intersects
+        self.make_cnet()
+
+        self.cnet.show_device(ax=ax3)
+        plt.show()
+        # start = timer()
+        # rfirst_sticks,rfirst_intersects=self.test_radius_first(self.source_sticks)
+        # end = timer()
+        # print("radius first algorithm : {:5.2f}s".format(end - start))
+
+        # print(self.intersects)
+        # print(kd2_intersects.drop_duplicates(subset=['x','y']))
+
+
+        # assert np.array_equal(kd_sticks.values, self.sticks.values)
         # assert np.array_equal(kd_intersects.values, original_intersects.values)
 
-        assert np.array_equal(rfirst_sticks.cluster.values, original_sticks.cluster.values)
+        # assert np.array_equal(kd2_sticks.cluster.values, original_sticks.cluster.values)
+        # assert np.array_equal(kd2_intersects.values, original_intersects.values)
+
+        # assert np.array_equal(rfirst_sticks.cluster.values, original_sticks.cluster.values)
         # assert np.array_equal(rfirst_intersects.values, original_intersects.values)
 
 
@@ -204,7 +249,7 @@ class StickCollection(object):
         if clustering:
             self.show_clusters(ax=axes[0])
         if junctions:
-            self.show_sticks(ax=axes[1])
+            self.show_sticks(sticks=self.sticks,intersects=self.intersects, ax=axes[1])
         if conduction and self.percolating:
             self.make_cnet()
             self.cnet.show_device(ax=axes[2])
@@ -225,8 +270,7 @@ class StickCollection(object):
         ax.set_title("$n_{{clusters}}$={}\nConnected={}".format(len(self.sticks.cluster.drop_duplicates()),str(self.percolating)))
         if not(ax):
             plt.show()
-    def show_sticks(self,intersects=True,ax=False):
-        sticks=self.sticks
+    def show_sticks(self,sticks,intersects,ax=False):
         if not(ax):
             fig=plt.figure(figsize=(5,5))
             ax=fig.add_subplot(111)
@@ -234,10 +278,9 @@ class StickCollection(object):
         stick_colors=[stick_cmap[i] for i in sticks.kind]
         collection=LineCollection(sticks.endarray.values,linewidth=0.5,colors=stick_colors)
         ax.add_collection(collection)
-        isect_cmap={'ms':'g','sm':'g', 'mm':'k','ss':'k', 'vs':'k','vm':'k', 'sg':'k','mg':'k'}
+        isect_cmap={'ms':'g','sm':'g', 'mm':'k','ss':'k', 'vs':'k','sv':'k','vm':'k', 'sg':'k','gs':'k','mg':'k'}
         isect_colors=[isect_cmap[i] for i in self.intersects.kind]
-        if intersects:
-            ax.scatter(self.intersects.x, self.intersects.y, c=isect_colors, s=20, linewidth=1, marker="x")
+        ax.scatter(intersects.x, intersects.y, c=isect_colors, s=20, linewidth=1, marker="x")
         ax.set_xlim((-0.02,1.02))
         ax.set_ylim((-0.02,1.02))
         if not(ax):
@@ -256,7 +299,9 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
     if args.test:
-        collection=StickCollection(2,l=1,pm=args.pm,scaling=1)
+        collection=StickCollection(2,l=0,pm=args.pm,scaling=1)
+        collection.make_test_sticks(args.number)
+
         collection.test_cluster_methods(args.number)
 
     else:
