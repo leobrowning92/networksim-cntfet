@@ -18,7 +18,6 @@ class StickCollection(object):
             self.sticks, self.intersects = self.make_clusters(sticks)
         self.sticks, self.intersects  = self.make_clusters_kdtree(self.make_sticks(n,l=l,pm=pm,scaling=scaling))
         self.make_cnet()
-
     def check_intersect(self, s1,s2):
         #assert that x intervals overlap
         if max(s1[:,0])<min(s2[:,0]):

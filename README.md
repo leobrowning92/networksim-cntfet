@@ -27,8 +27,7 @@ explicit number to run optimization on is:
 and corresponds to 300 sticks on a 5um square area with a length distribution of 0.66pm0.44um corresponding to my experimental results. conduction is calculated in each case.
 
 which is run in sequence as:
-    python -m cProfile -o output.pstats kd_percolation.py 300
-    python gprof2dot.py -f pstats output.pstats | dot -Tpng -o output.png
+    (python -m cProfile -o output.pstats kd_percolation.py 300; python gprof2dot.py -f pstats output.pstats | dot -Tpng -o output.png)
 
 The total run time over 5 or 6 tries is between 14 and 15 seconds (user time) when running `time python kd_percolation.py 300` for the original brute force cluster search.
 
