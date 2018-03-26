@@ -93,16 +93,18 @@ class StickCollection(object):
 
         X=sticks.loc[:,'xc':'yc'].values
         endpoints=sticks.endarray.values
+        kinds=sticks.kind.values
+        lengths=sticks.length.values
         tree=spatial.KDTree(X)
         for i in range(len(sticks)):
-            neighbors = tree.query_ball_point(X[i],sticks.loc[i,'length'])
+            neighbors = tree.query_ball_point(X[i],lengths[i])
             for j in neighbors:
                 # ensures no double counting and self counting
                 if i<j:
                     intersection=self.check_intersect(endpoints[i],endpoints[j])
                     if intersection and 0<=intersection[0]<=1 and 0<=intersection[1]<=1:
                         sticks.loc[sticks.cluster==sticks.loc[j,'cluster'],'cluster'] = sticks.loc[i,'cluster']
-                        intersects.append([i,j,*intersection, sticks.iloc[i].kind+sticks.iloc[j].kind],)
+                        intersects.append([i,j,*intersection, kinds[i]+kinds[j]],)
         self.percolating=sticks.loc[0,"cluster"]==sticks.loc[1,"cluster"]
         intersects=pd.DataFrame(intersects, columns=["stick1",'stick2','x','y','kind'])
         intersects['cluster']=intersects['stick1'].apply(lambda x: sticks.iloc[x].cluster)
@@ -217,6 +219,7 @@ def time_collection(n, iterations=5,scaling=5):
         except Exception as e:
             print(e)
         end = timer()
+        print(end - start)
         times.append(end - start)
     return sum(times)/len(times)
 if __name__ == "__main__":

@@ -31,4 +31,9 @@ which is run in sequence as:
 
 The total run time over 5 or 6 tries is between 14 and 15 seconds (user time) when running `time python kd_percolation.py 300` for the original brute force cluster search.
 
-Using a kdtree with a sorted length list and length dependant search radius the same run times are 3.6 to 3.8 seconds.
+Using a kdtree with a sorted length list and length dependant search radius the same run times are 3.6 to 3.8 seconds. 3.2s over 5 repeats.
+
+#### optimization improvements
+
+- define endpoints from sticks before query loops 1.65 seconds over 5 repeats.
+- define kind of sticks outside querry loop 1.48 s over 5 loops
