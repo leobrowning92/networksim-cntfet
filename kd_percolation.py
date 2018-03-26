@@ -62,28 +62,15 @@ class StickCollection(object):
 
     def make_sticks(self, n,**kwargs):
         # adds a vertical source and drain stick on left and right respectively
-        source=[0.01, 0.5,np.pi/2-1e-6,1,'v']
+        source=[0.01, 0.5,np.pi/2-1e-6,100,'v']
         source.append(self.get_ends(source))
-        drain=[.99, 0.5,np.pi/2-1e-6,1,'g']
+        drain=[.99, 0.5,np.pi/2-1e-6,100,'g']
         drain.append(self.get_ends(drain))
         return pd.DataFrame( [source]+[self.make_stick(**kwargs) for i in range(n)]+[drain] ,columns=[ "xc", "yc", "angle", "length",'kind', "endarray"])
         # return pd.DataFrame( [self.make_stick(**kwargs) for i in range(n)] ,columns=[ "xc", "yc", "angle", "length",'kind', "endarray"])
 
 
-    def make_clusters(self, sticks):
-        # initializes all sticks in their own cluster
-        sticks['cluster']=sticks.index
-        intersects=[]
-        for i in range(len(sticks)):
-            for j in range(i,len(sticks)):
-                intersection=self.check_intersect(sticks.iloc[i].endarray, sticks.iloc[j].endarray)
-                if intersection and 0<=intersection[0]<=1 and 0<=intersection[1]<=1:
-                    sticks.loc[sticks.cluster==sticks.loc[j,'cluster'],'cluster'] = sticks.loc[i,'cluster']
-                    intersects.append([i,j,*intersection, sticks.iloc[i].kind+sticks.iloc[j].kind],)
-        self.percolating=sticks.loc[0,"cluster"]==sticks.loc[len(sticks)-1,"cluster"]
-        intersects=pd.DataFrame(intersects, columns=["stick1",'stick2','x','y','kind'])
-        intersects['cluster']=intersects['stick1'].apply(lambda x: sticks.iloc[x].cluster)
-        return sticks, intersects
+
 
     def make_clusters_kdtree(self,sticks):
         sticks['cluster']=sticks.index
@@ -102,17 +89,14 @@ class StickCollection(object):
                 if i<j:
                     intersection=self.check_intersect(endpoints[i],endpoints[j])
                     if intersection and 0<=intersection[0]<=1 and 0<=intersection[1]<=1:
-                        sticks.loc[sticks.cluster==sticks.iat[j,6],'cluster'] = sticks.iat[i,6]
                         intersects.append([i,j,*intersection, kinds[i]+kinds[j]],)
-        self.percolating=sticks.loc[0,"cluster"]==sticks.iat[1,6]
         intersects=pd.DataFrame(intersects, columns=["stick1",'stick2','x','y','kind'])
-        intersects['cluster']=intersects['stick1'].apply(lambda x: sticks.iloc[x].cluster)
         return sticks, intersects
 
     def make_trivial_sticks(self):
-        source=[0.01, 0.5,np.pi/2-1e-6,1,'v']
+        source=[0.01, 0.5,np.pi/2-1e-6,1.002,'v']
         source.append(self.get_ends(source))
-        drain=[.99, 0.5,np.pi/2-1e-6,1,'g']
+        drain=[.99, 0.5,np.pi/2-1e-6,1.001,'g']
         drain.append(self.get_ends(drain))
         st1=[0.3, 0.5,np.pi/4,1,'s']
         st1.append(self.get_ends(st1))
@@ -123,7 +107,8 @@ class StickCollection(object):
         st4=[0.5, 0.5,np.pi/4,0.1,'s']
         st4.append(self.get_ends(st4))
         sticks=pd.DataFrame([source]+[st1]+[st2]+[st3]+[st4]+[drain],columns=[ "xc", "yc", "angle", "length",'kind', "endarray"])
-        self.sticks, self.intersects  = self.make_clusters(sticks)
+        self.sticks, self.intersects  = self.make_clusters_kdtree(sticks)
+        self.make_cnet()
 
 
 
@@ -131,11 +116,13 @@ class StickCollection(object):
         # only calculates the conduction through the spanning cluster of sticks
         # to avoid the creation of a singular adjacency matrix caused by
         # disconnected junctions becoming unconnected nodes in the cnet
-        dom_cluster=self.intersects[self.intersects.cluster==self.sticks.loc[0,'cluster']]
-
-        self.graph=nx.from_pandas_edgelist(dom_cluster, source='stick1',target='stick2',edge_attr=True)
-
-        self.ground_nodes=[len(self.graph)-1]
+        self.graph=nx.from_pandas_edgelist(self.intersects, source='stick1',target='stick2',edge_attr=True)
+        self.percolating=False
+        for c in nx.connected_components(self.graph):
+            if (0 in c) and (1 in c):
+                self.percolating=True
+                self.graph=self.graph.subgraph(c)
+        self.ground_nodes=[1]
         self.voltage_sources=[[0,0.1]]
         self.populate_graph()
         for node in self.graph.nodes():
@@ -146,30 +133,39 @@ class StickCollection(object):
 
     def populate_graph(self):
         for edge in self.graph.edges():
-
             self.graph.edges[edge]['component']=Transistor()
 
+    def label_clusters(self):
+        i=0
+        for c in nx.connected_components(self.graph):
+            self.graph=self.graph.subgraph(c)
+            for n in c:
+                self.sticks.loc[n,'cluster']=i
+            i+=1
 
     def make_cnet(self):
-        assert self.percolating, "The network is not conducting!"
-        self.cnet=ConductionNetwork(*self.make_graph())
-        # print(self.cnet.make_G(),'\n')
-        # print(self.cnet.make_A(self.cnet.make_G()))
-        self.cnet.set_global_gate(0)
-        # self.cnet.set_local_gate([0.5,0,0.4,1.2], 10)
-        self.cnet.update()
-        # print(self.cnet.source_currents)
+        try:
+            self.cnet=ConductionNetwork(*self.make_graph())
+            assert self.percolating, "The network is not conducting!"
+            # print(self.cnet.make_G(),'\n')
+            # print(self.cnet.make_A(self.cnet.make_G()))
+            self.cnet.set_global_gate(0)
+            # self.cnet.set_local_gate([0.5,0,0.4,1.2], 10)
+            self.cnet.update()
+            # print(self.cnet.graph.edges(data=True))
+        except Exception as e:
+            print(e)
 
 
     def show_system(self,clustering=True,junctions=True,conduction=True):
         fig = plt.figure(figsize=(15,5))
         axes=[fig.add_subplot(1,3,i+1) for i in range(3)]
+        self.label_clusters()
         if clustering:
             self.show_clusters(ax=axes[0])
         if junctions:
             self.show_sticks(sticks=self.sticks,intersects=self.intersects, ax=axes[1])
         if conduction and self.percolating:
-            self.make_cnet()
             self.cnet.show_device(ax=axes[2])
         plt.show()
     def show_clusters(self,intersects=True,ax=False):
@@ -230,13 +226,21 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--test", action="store_true")
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument("--show", action="store_true",default=False)
-    parser.add_argument("--time",type=int,default=0)
+    parser.add_argument("--time",default=0)
     args = parser.parse_args()
     if args.time:
-        avtime=time_collection(args.number,args.time,args.scaling)
-        print(avtime)
+        if args.time== 'series':
+            for i in [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]:
+                avtime=time_collection(i**2*16,1,i)
+        elif type(args.time)==int:
+            avtime=time_collection(args.number,args.time,args.scaling)
+            print(avtime)
 
 
+    elif args.test:
+        collection=StickCollection(args.number,l=args.length,pm=args.pm,scaling=args.scaling)
+        collection.make_trivial_sticks()
+        collection.show_system()
     else:
         collection=StickCollection(args.number,l=args.length,pm=args.pm,scaling=args.scaling)
         if args.show:
