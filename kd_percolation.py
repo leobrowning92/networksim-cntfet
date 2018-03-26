@@ -233,8 +233,7 @@ if __name__ == "__main__":
     parser.add_argument("--time",type=int,default=0)
     args = parser.parse_args()
     if args.time:
-        for size in [30]:
-            avtime=time_collection(size**2*16,1,size)
+        avtime=time_collection(args.number,args.time,args.scaling)
         print(avtime)
 
 
