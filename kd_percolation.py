@@ -20,10 +20,10 @@ class StickCollection(object):
         self.make_cnet()
     def check_intersect(self, s1,s2):
         #assert that x intervals overlap
-        if max(s1[:,0])<min(s2[:,0]):
+        if max(s1[:,0])<min(s2[:,0]) and max(s1[:,1])<min(s2[:,1]):
             return False # intervals do not overlap
-        #gradients
 
+        #gradients
         m1=(s1[0,1]-s1[1,1])/(s1[0,0]-s1[1,0])
         m2=(s2[0,1]-s2[1,1])/(s2[0,0]-s2[1,0])
         #intercepts
@@ -90,7 +90,6 @@ class StickCollection(object):
         sticks.sort_values('length',inplace=True,ascending=False)
         sticks.reset_index(drop=True,inplace=True)
         intersects=[]
-
         X=sticks.loc[:,'xc':'yc'].values
         endpoints=sticks.endarray.values
         kinds=sticks.kind.values
@@ -103,9 +102,9 @@ class StickCollection(object):
                 if i<j:
                     intersection=self.check_intersect(endpoints[i],endpoints[j])
                     if intersection and 0<=intersection[0]<=1 and 0<=intersection[1]<=1:
-                        sticks.loc[sticks.cluster==sticks.loc[j,'cluster'],'cluster'] = sticks.loc[i,'cluster']
+                        sticks.loc[sticks.cluster==sticks.iat[j,6],'cluster'] = sticks.iat[i,6]
                         intersects.append([i,j,*intersection, kinds[i]+kinds[j]],)
-        self.percolating=sticks.loc[0,"cluster"]==sticks.loc[1,"cluster"]
+        self.percolating=sticks.loc[0,"cluster"]==sticks.iat[1,6]
         intersects=pd.DataFrame(intersects, columns=["stick1",'stick2','x','y','kind'])
         intersects['cluster']=intersects['stick1'].apply(lambda x: sticks.iloc[x].cluster)
         return sticks, intersects
@@ -234,7 +233,8 @@ if __name__ == "__main__":
     parser.add_argument("--time",type=int,default=0)
     args = parser.parse_args()
     if args.time:
-        avtime=time_collection(args.number,args.time,args.scaling)
+        for size in [30]:
+            avtime=time_collection(size**2*16,1,size)
         print(avtime)
 
 
