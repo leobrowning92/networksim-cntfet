@@ -74,10 +74,6 @@ class StickCollection(object):
         # initializes all sticks in their own cluster
         sticks['cluster']=sticks.index
         intersects=[]
-        # this section might be emberassingly parallel, but it would have to be
-        # addapted to add the cluster number of both intersecting sticks to both.
-        # then at the end the final cluster is the minimum of all the cluster
-        # intersects?
         for i in range(len(sticks)):
             for j in range(i,len(sticks)):
                 intersection=self.check_intersect(sticks.iloc[i].endarray, sticks.iloc[j].endarray)
@@ -92,7 +88,7 @@ class StickCollection(object):
     def make_clusters_kdtree(self,sticks):
         sticks['cluster']=sticks.index
         sticks.sort_values('length',inplace=True,ascending=False)
-        sticks=sticks.reset_index(drop=True)
+        sticks.reset_index(drop=True,inplace=True)
         intersects=[]
 
         X=sticks.loc[:,'xc':'yc'].values
@@ -162,6 +158,7 @@ class StickCollection(object):
         self.cnet.update()
         # print(self.cnet.source_currents)
 
+
     def show_system(self,clustering=True,junctions=True,conduction=True):
         fig = plt.figure(figsize=(15,5))
         axes=[fig.add_subplot(1,3,i+1) for i in range(3)]
@@ -208,6 +205,19 @@ class StickCollection(object):
 
 # show_sticks(make_sticks(10,l=1))
 
+
+def time_collection(n, iterations=5):
+    times=[]
+    from timeit import default_timer as timer
+    for i in range(iterations):
+        start = timer()
+        try:
+            collection=StickCollection(n,l=0,pm=args.pm,scaling=60)
+        except Exception as e:
+            print(e)
+        end = timer()
+        times.append(end - start)
+    return sum(times)/len(times)
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("number",type=int)
@@ -217,9 +227,11 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--test", action="store_true")
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument("--show", action="store_true",default=False)
+    parser.add_argument("--time",action="store_true",default=False)
     args = parser.parse_args()
-    if args.test:
-        collection=StickCollection(args.number,l=0,pm=args.pm,scaling=5)
+    if args.time:
+        for i in [300,400,500,600,700,800,900,1000]:
+            print(i,time_collection(i,iterations=1))
 
 
     else:
