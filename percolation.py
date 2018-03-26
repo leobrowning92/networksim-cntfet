@@ -16,7 +16,7 @@ class StickCollection(object):
     def __init__(self,n,l,sticks=None,pm=0,scaling=1):
         if sticks:
             self.sticks, self.intersects = self.make_clusters(sticks)
-        self.sticks, self.intersects  = self.make_clusters_kdtree(self.make_sticks(n,l=l,pm=pm,scaling=scaling))
+        self.sticks, self.intersects  = self.make_intersects_kdtree(self.make_sticks(n,l=l,pm=pm,scaling=scaling))
         self.make_cnet()
     def check_intersect(self, s1,s2):
         #assert that x intervals overlap
@@ -72,7 +72,7 @@ class StickCollection(object):
 
 
 
-    def make_clusters_kdtree(self,sticks):
+    def make_intersects_kdtree(self,sticks):
         sticks['cluster']=sticks.index
         sticks.sort_values('length',inplace=True,ascending=False)
         sticks.reset_index(drop=True,inplace=True)
@@ -107,7 +107,7 @@ class StickCollection(object):
         st4=[0.5, 0.5,np.pi/4,0.1,'s']
         st4.append(self.get_ends(st4))
         sticks=pd.DataFrame([source]+[st1]+[st2]+[st3]+[st4]+[drain],columns=[ "xc", "yc", "angle", "length",'kind', "endarray"])
-        self.sticks, self.intersects  = self.make_clusters_kdtree(sticks)
+        self.sticks, self.intersects  = self.make_intersects_kdtree(sticks)
         self.make_cnet()
 
 
@@ -168,6 +168,7 @@ class StickCollection(object):
         if conduction and self.percolating:
             self.cnet.show_device(ax=axes[2])
         plt.show()
+
     def show_clusters(self,intersects=True,ax=False):
         sticks=self.sticks
         if not(ax):
@@ -201,7 +202,7 @@ class StickCollection(object):
             plt.show()
 
 
-# show_sticks(make_sticks(10,l=1))
+
 
 
 def time_collection(n, iterations=5,scaling=5):
