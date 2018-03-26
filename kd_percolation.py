@@ -92,13 +92,14 @@ class StickCollection(object):
         intersects=[]
 
         X=sticks.loc[:,'xc':'yc'].values
+        endpoints=sticks.endarray.values
         tree=spatial.KDTree(X)
         for i in range(len(sticks)):
             neighbors = tree.query_ball_point(X[i],sticks.loc[i,'length'])
             for j in neighbors:
                 # ensures no double counting and self counting
                 if i<j:
-                    intersection=self.check_intersect(sticks.iloc[i].endarray, sticks.iloc[j].endarray)
+                    intersection=self.check_intersect(endpoints[i],endpoints[j])
                     if intersection and 0<=intersection[0]<=1 and 0<=intersection[1]<=1:
                         sticks.loc[sticks.cluster==sticks.loc[j,'cluster'],'cluster'] = sticks.loc[i,'cluster']
                         intersects.append([i,j,*intersection, sticks.iloc[i].kind+sticks.iloc[j].kind],)
@@ -206,13 +207,13 @@ class StickCollection(object):
 # show_sticks(make_sticks(10,l=1))
 
 
-def time_collection(n, iterations=5):
+def time_collection(n, iterations=5,scaling=5):
     times=[]
     from timeit import default_timer as timer
     for i in range(iterations):
         start = timer()
         try:
-            collection=StickCollection(n,l=0,pm=args.pm,scaling=60)
+            collection=StickCollection(n,l=0,pm=0.135,scaling=scaling)
         except Exception as e:
             print(e)
         end = timer()
@@ -227,11 +228,11 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--test", action="store_true")
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument("--show", action="store_true",default=False)
-    parser.add_argument("--time",action="store_true",default=False)
+    parser.add_argument("--time",type=int,default=0)
     args = parser.parse_args()
     if args.time:
-        for i in [300,400,500,600,700,800,900,1000]:
-            print(i,time_collection(i,iterations=1))
+        avtime=time_collection(args.number,args.time,args.scaling)
+        print(avtime)
 
 
     else:
