@@ -64,7 +64,7 @@ def n_measure(n):
 def measure_number_series():
     n=[n*100 for n in range(1,9)] + [n*1000 for n in range(1,9)] + [n*10000 for n in range(1,9)]
     pool = Pool(os.cpu_count()-1)
-    pool.map(n_measure, n)
+    pool.map_async(n_measure, n)
 
 
 
