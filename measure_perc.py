@@ -24,17 +24,17 @@ def measure_fullnet(n,v=True,scaling=60):
         maxclust=0
         fname=0
         print("measurement failed: error making collection")
-        print("ERROR : ",e)
+        print("ERROR for {} stics:\n".format(n),e)
     try:
         collection.save_system()
     except Exception as e:
         print("measurement failed: error saving data")
-        print("ERROR : ",e)
+        print("ERROR for {} stics:\n".format(n),e)
     try:
         collection.show_system(show=False,save='on')
     except Exception as e:
         print("measurement failed: error saving image")
-        print("ERROR : ",e)
+        print("ERROR for {} stics:\n".format(n),e)
     try:
         ion=sum(collection.cnet.source_currents)
         collection.cnet.set_global_gate(10)
@@ -44,12 +44,12 @@ def measure_fullnet(n,v=True,scaling=60):
         ion=0
         ioff=0
         print("measurement failed: error gating")
-        print("ERROR : ",e)
+        print("ERROR for {} stics:\n".format(n),e)
     try:
         collection.show_system(show=False,save='off')
     except Exception as e:
         print("measurement failed: error saving image")
-        print("ERROR : ",e)
+        print("ERROR for {} stics:\n".format(n),e)
 
     end = timer()
     runtime=end - start
