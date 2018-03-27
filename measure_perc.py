@@ -1,9 +1,11 @@
-import os
+import os,argparse
 import percolation as perc
 from timeit import default_timer as timer
 import pandas as pd
 import networkx as nx
 from multiprocessing import Pool
+import matplotlib
+matplotlib.use("Qt5Agg")
 
 
 
@@ -54,11 +56,18 @@ def measure_fullnet(n,v=True,scaling=60):
 def n_measure(n):
     measure_fullnet(n,scaling=60)
 def measure_number_series():
-    n=[n*100 for n in range(1,9)] + [n*1000 for n in range(1,9)] + [n*1000 for n in range(1,9)]
+    n=[n*100 for n in range(1,9)] + [n*1000 for n in range(1,9)] + [n*10000 for n in range(1,9)]
     pool = Pool(os.cpu_count()-1)
     pool.map(n_measure, n)
 
 
 
 if __name__ == '__main__':
-    measure_number_series()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-t",'--test',action="store_true")
+    args = parser.parse_args()
+
+    if args.test:
+        measure_fullnet(500,scaling=5)
+    else:
+        measure_number_series()
