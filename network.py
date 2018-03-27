@@ -102,6 +102,7 @@ class ConductionNetwork(object):
             ax=plt.subplot(111)
         self.plot_network(ax,v=v)
         self.plot_regions(ax)
+        
         # ax.legend()
         if not(ax):
             plt.show()

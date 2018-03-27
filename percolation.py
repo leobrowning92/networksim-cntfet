@@ -14,15 +14,17 @@ from datetime import datetime
 
 
 class StickCollection(object):
-    def __init__(self,n=2,l='exp',pm=0,scaling=1,fname='',directory='data',notes=''):
+    def __init__(self,n=2,l='exp',pm=0.135,scaling=1,fname='',directory='data',notes=''):
         self.scaling=scaling
         self.n=n
         self.pm=pm
         self.l=l
+        self.notes=notes
+        self.directory=directory
         if not(fname):
             self.sticks, self.intersects  = self.make_intersects_kdtree( self.make_sticks(n, l=l, pm=pm, scaling=scaling))
             self.make_cnet()
-            self.fname=self.make_fname(notes, directory)
+            self.fname=self.make_fname()
         else:
             self.load_system(os.path.join(directory,fname))
     def check_intersect(self, s1,s2):
@@ -73,7 +75,7 @@ class StickCollection(object):
         # adds a vertical source and drain stick on left and right respectively
         source=[0.01, 0.5,np.pi/2-1e-6,100,'v']
         source.append(self.get_ends(source))
-        drain=[.99, 0.5,np.pi/2-1e-6,100,'g']
+        drain=[.99, 0.5,np.pi/2-1e-6,100,'v']
         drain.append(self.get_ends(drain))
         return pd.DataFrame( [source]+[self.make_stick(**kwargs) for i in range(n)]+[drain] ,columns=[ "xc", "yc", "angle", "length",'kind', "endarray"])
         # return pd.DataFrame( [self.make_stick(**kwargs) for i in range(n)] ,columns=[ "xc", "yc", "angle", "length",'kind', "endarray"])
@@ -103,9 +105,9 @@ class StickCollection(object):
         return sticks, intersects
 
     def make_trivial_sticks(self):
-        source=[0.01, 0.5,np.pi/2-1e-6,1.002,'v']
+        source=[0.01, 0.5,np.pi/2-1e-6,1.002,'m']
         source.append(self.get_ends(source))
-        drain=[.99, 0.5,np.pi/2-1e-6,1.001,'g']
+        drain=[.99, 0.5,np.pi/2-1e-6,1.001,'m']
         drain.append(self.get_ends(drain))
         st1=[0.3, 0.5,np.pi/4,1,'s']
         st1.append(self.get_ends(st1))
@@ -141,8 +143,9 @@ class StickCollection(object):
         return self.graph, self.ground_nodes, self.voltage_sources
 
     def populate_graph(self):
+        offmap={'ms':1000,'sm':1000, 'mm':1,'ss':1,'vs':1,'sv':1,'vm':1,'mv':1}
         for edge in self.graph.edges():
-            self.graph.edges[edge]['component']=Transistor()
+            self.graph.edges[edge]['component']=Transistor( off_resistance=offmap[self.graph.edges[edge]['kind']])
 
     def label_clusters(self):
         i=0
@@ -163,12 +166,13 @@ class StickCollection(object):
             print(e)
 
     def timestamp(self):
-
         return datetime.now().strftime('%y-%m-%d_%H%M%S_%f')
-    def make_fname(self,notes,dir):
-        notes="{}_{}sticks_{}x{}um_{}L_{}".format( self.timestamp(),self.n,self.scaling,self.scaling,self.l,notes)
-        fname=os.path.join(dir,notes)
+
+    def make_fname(self):
+        self.notes="{}_{}sticks_{}x{}um_{}L_{}".format( self.timestamp(),self.n,self.scaling,self.scaling,self.l,self.notes)
+        fname=os.path.join(self.directory,self.notes)
         return fname
+
     def save_system(self):
         #saves the sticks DataFrame
         self.sticks.to_csv(self.fname+'_sticks.csv')
@@ -195,7 +199,7 @@ class StickCollection(object):
         if conduction and self.percolating:
             self.cnet.show_device(ax=axes[2])
         if save:
-            plt.savefig(self.fname+'_plots.png')
+            plt.savefig(self.fname+'_'+save+'_plots.png')
         if show:
             plt.show()
 
@@ -212,18 +216,18 @@ class StickCollection(object):
         #     ax.scatter(self.intersects.x, self.intersects.y, c="r", s=30, linewidth=0.8, marker="x")
         ax.set_xlim((-0.02,1.02))
         ax.set_ylim((-0.02,1.02))
-        ax.set_title("$n_{{clusters}}$={}\nConnected={}".format(len(self.sticks.cluster.drop_duplicates()),str(self.percolating)))
+        # ax.set_title("$n_{{clusters}}$={}\nConnected={}".format(len(self.sticks.cluster.drop_duplicates()),str(self.percolating)))
         if not(ax):
             plt.show()
     def show_sticks(self,sticks,intersects,ax=False):
         if not(ax):
             fig=plt.figure(figsize=(5,5))
             ax=fig.add_subplot(111)
-        stick_cmap={'s':'b','m':'r','v':'y','g':'k'}
+        stick_cmap={'s':'b','m':'r','v':'k'}
         stick_colors=[stick_cmap[i] for i in sticks.kind]
         collection=LineCollection(sticks.endarray.values,linewidth=0.5,colors=stick_colors)
         ax.add_collection(collection)
-        isect_cmap={'ms':'g','sm':'g', 'mm':'k','ss':'k', 'vs':'k','sv':'k','vm':'k', 'sg':'k','gs':'k','mg':'k','gm':'k'}
+        isect_cmap={'ms':'g','sm':'g', 'mm':'k','ss':'k','vs':'k','sv':'k','vm':'k','mv':'k'}
         isect_colors=[isect_cmap[i] for i in self.intersects.kind]
         ax.scatter(intersects.x, intersects.y, c=isect_colors, s=20, linewidth=1, marker="x")
         ax.set_xlim((-0.02,1.02))
@@ -252,7 +256,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("number",type=int)
     parser.add_argument("--pm",type=float,default=0.135)
-    parser.add_argument("--length",type=float,default=0)
+    parser.add_argument("--length",default='exp')
     parser.add_argument("--scaling",type=float,default=5)
     parser.add_argument("-t", "--test", action="store_true")
     parser.add_argument("-v", "--verbose", action="store_true")
