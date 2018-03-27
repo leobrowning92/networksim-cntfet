@@ -1,4 +1,4 @@
-import argparse
+import argparse, os, time
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -9,15 +9,22 @@ from network import ConductionNetwork, Resistor, Transistor
 import networkx as nx
 import scipy.spatial as spatial
 from timeit import default_timer as timer
+from datetime import datetime
 
 
 
 class StickCollection(object):
-    def __init__(self,n,l,sticks=None,pm=0,scaling=1):
-        if sticks:
-            self.sticks, self.intersects = self.make_clusters(sticks)
-        self.sticks, self.intersects  = self.make_intersects_kdtree(self.make_sticks(n,l=l,pm=pm,scaling=scaling))
-        self.make_cnet()
+    def __init__(self,n=2,l='exp',pm=0,scaling=1,fname='',directory='data',notes=''):
+        self.scaling=scaling
+        self.n=n
+        self.pm=pm
+        self.l=l
+        if not(fname):
+            self.sticks, self.intersects  = self.make_intersects_kdtree( self.make_sticks(n, l=l, pm=pm, scaling=scaling))
+            self.make_cnet()
+            self.fname=self.make_fname(notes, directory)
+        else:
+            self.load_system(os.path.join(directory,fname))
     def check_intersect(self, s1,s2):
         #assert that x intervals overlap
         if max(s1[:,0])<min(s2[:,0]) and max(s1[:,1])<min(s2[:,1]):
@@ -53,10 +60,12 @@ class StickCollection(object):
         the end array is of the form [ [x1,y1],[x2,y2] ]"""
         if np.random.rand()<=pm:
             kind='m'
-        if l:
+        if type(l)!=str:
             stick=[np.random.rand(), np.random.rand(), np.random.rand()*2*np.pi, l/scaling,kind]
-        else:
+        elif l=='exp':
             stick= [np.random.rand(), np.random.rand(), np.random.rand()*2*np.pi, abs(np.random.normal(0.66,0.44))/scaling,kind]
+        else:
+            print('invalid L value')
         stick.append(self.get_ends(stick))
         return stick
 
@@ -147,17 +156,35 @@ class StickCollection(object):
         try:
             self.cnet=ConductionNetwork(*self.make_graph())
             assert self.percolating, "The network is not conducting!"
-            # print(self.cnet.make_G(),'\n')
-            # print(self.cnet.make_A(self.cnet.make_G()))
             self.cnet.set_global_gate(0)
             # self.cnet.set_local_gate([0.5,0,0.4,1.2], 10)
             self.cnet.update()
-            # print(self.cnet.graph.edges(data=True))
         except Exception as e:
             print(e)
 
+    def timestamp(self):
 
-    def show_system(self,clustering=True,junctions=True,conduction=True):
+        return datetime.now().strftime('%y-%m-%d_%H%M%S_%f')
+    def make_fname(self,notes,dir):
+        notes="{}_{}sticks_{}x{}um_{}L_{}".format( self.timestamp(),self.n,self.scaling,self.scaling,self.l,notes)
+        fname=os.path.join(dir,notes)
+        return fname
+    def save_system(self):
+        #saves the sticks DataFrame
+        self.sticks.to_csv(self.fname+'_sticks.csv')
+        #saves the intersects dataframe
+        self.intersects.to_csv(self.fname+'_intersects.csv')
+        #save the graph object
+        nx.write_yaml(self.graph,self.fname+'_graph.yaml')
+
+    def load_system(self,fname):
+        self.sticks=pd.read_csv(fname+'_sticks.csv',index_col=0)
+        self.intersects=pd.read_csv(fname+'_intersects.csv',index_col=0)
+        self.graph=nx.read_yaml(fname+'_graph.yaml')
+        self.sticks.endarray=[self.get_ends(row) for row in self.sticks.values]
+        self.make_cnet()
+
+    def show_system(self,clustering=True, junctions=True, conduction=True, show=True, save=False):
         fig = plt.figure(figsize=(15,5))
         axes=[fig.add_subplot(1,3,i+1) for i in range(3)]
         self.label_clusters()
@@ -167,7 +194,10 @@ class StickCollection(object):
             self.show_sticks(sticks=self.sticks,intersects=self.intersects, ax=axes[1])
         if conduction and self.percolating:
             self.cnet.show_device(ax=axes[2])
-        plt.show()
+        if save:
+            plt.savefig(self.fname+'_plots.png')
+        if show:
+            plt.show()
 
     def show_clusters(self,intersects=True,ax=False):
         sticks=self.sticks
