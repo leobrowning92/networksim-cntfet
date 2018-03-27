@@ -13,6 +13,8 @@ matplotlib.use("Qt5Agg")
 def measure_fullnet(n,v=True,scaling=60):
     start = timer()
     data=pd.DataFrame(columns = ['sticks', 'size', 'density', 'nclust', 'maxclust', 'ion', 'ioff', 'runtime', 'fname'])
+    if v:
+        print("====== measuring {} sticks ======".format(n))
     try:
         collection=perc.StickCollection(n,scaling=scaling,notes='run')
 
