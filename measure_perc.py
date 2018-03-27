@@ -39,12 +39,16 @@ def measure_fullnet(n,v=True,scaling=60):
         ion=sum(collection.cnet.source_currents)
         collection.cnet.set_global_gate(10)
         collection.cnet.update()
-        collection.show_system(show=False,save='off')
         ioff=sum(collection.cnet.source_currents)
     except Exception as e:
         ion=0
         ioff=0
         print("measurement failed: error gating")
+        print("ERROR : ",e)
+    try:
+        collection.show_system(show=False,save='off')
+    except Exception as e:
+        print("measurement failed: error saving image")
         print("ERROR : ",e)
 
     end = timer()
