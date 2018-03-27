@@ -64,13 +64,13 @@ def n_measure(n):
 def measure_number_series():
     n=[n*100 for n in range(1,9)] + [n*1000 for n in range(1,9)] + [n*10000 for n in range(1,9)]
     pool = Pool(os.cpu_count()-1)
-    pool.map_async(n_measure, n)
+    pool.map(n_measure, n)
 
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("-t",'--test',action="store_true")
+    parser.add_argument("-t",'--test',action="store_true",default=False)
     args = parser.parse_args()
 
     if args.test:
