@@ -96,4 +96,4 @@ if __name__ == '__main__':
     if args.test:
         measure_fullnet(500,scaling=5,remote=args.remote)
     else:
-        measure_number_series(remote=args.remote)
+        measure_number_series_compareL(remote=args.remote)
