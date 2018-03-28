@@ -1,4 +1,4 @@
-import argparse, os, time
+import argparse, os, time,traceback
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -150,7 +150,6 @@ class StickCollection(object):
     def label_clusters(self):
         i=0
         for c in nx.connected_components(self.graph):
-            self.graph=self.graph.subgraph(c)
             for n in c:
                 self.sticks.loc[n,'cluster']=i
             i+=1
@@ -162,8 +161,8 @@ class StickCollection(object):
             self.cnet.set_global_gate(0)
             # self.cnet.set_local_gate([0.5,0,0.4,1.2], 10)
             self.cnet.update()
-        except Exception as e:
-            print(e)
+        except:
+            traceback.print_exc()
 
     def timestamp(self):
         return datetime.now().strftime('%y-%m-%d_%H%M%S_%f')
@@ -179,14 +178,21 @@ class StickCollection(object):
         #saves the intersects dataframe
         self.intersects.to_csv(self.fname+'_intersects.csv')
         #save the graph object
-        nx.write_yaml(self.graph,self.fname+'_graph.yaml')
+        # nx.write_yaml(self.graph,self.fname+'_graph.yaml')
 
-    def load_system(self,fname):
+    def load_system(self,fname,network=True):
+        print("loading sticks")
         self.sticks=pd.read_csv(fname+'_sticks.csv',index_col=0)
-        self.intersects=pd.read_csv(fname+'_intersects.csv',index_col=0)
-        self.graph=nx.read_yaml(fname+'_graph.yaml')
+        print("recalculating endpoints")
         self.sticks.endarray=[self.get_ends(row) for row in self.sticks.values]
-        self.make_cnet()
+        print("loading intersects")
+        self.intersects=pd.read_csv(fname+'_intersects.csv',index_col=0)
+        # print("Loading graph")
+        # self.graph=nx.read_yaml(fname+'_graph.yaml')
+
+        if network:
+            print("making cnet")
+            self.make_cnet()
 
     def show_system(self,clustering=True, junctions=True, conduction=True, show=True, save=False):
         fig = plt.figure(figsize=(15,5))
@@ -261,6 +267,7 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--test", action="store_true")
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument("--show", action="store_true",default=False)
+    parser.add_argument('-s','--save', action="store_true",default=False)
     parser.add_argument("--time",default=0)
     args = parser.parse_args()
     if args.time:
@@ -279,5 +286,8 @@ if __name__ == "__main__":
     else:
         collection=StickCollection(args.number,l=args.length,pm=args.pm,scaling=args.scaling)
         if args.show:
-            collection.show_system()
+            collection.show_system(save=args.save)
+        if args.save:
+            collection.save_system()
+
         # print(len(collection.sticks.cluster.drop_duplicates()))

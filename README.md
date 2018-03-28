@@ -39,3 +39,9 @@ Using a kdtree with a sorted length list and length dependant search radius the 
 - define kind of sticks outside querry loop 1.48 s over 5 repeats
 - made interval checks early in the intersection check code 1.34 over 10 repeats
 - moved cluster calculation over to the graph structure, so that only interstects are calculated pre graph. 0.35 over 10 repeats.
+
+### Running remotely
+
+to get the data from the baptiste's grid run 
+
+    scp -r leo@10.30.128.49:/home/leo/gitrepos/networksim-cntfet/data /home/leo/Desktop/

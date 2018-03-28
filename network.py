@@ -6,6 +6,7 @@ matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.patches as patches
+import scipy.sparse as sparse
 class Transistor(object):
     def __init__(self,on_resistance=1,off_resistance=1000,threshold_voltage=0, gate_voltage=0):
         assert on_resistance>0 and off_resistance>0, "ERROR: a component cannot have -ve resistance"
@@ -45,22 +46,28 @@ class ConductionNetwork(object):
     def make_G(self):
         """Generates the adjacency matrix of the graph as a numpy array and then sets the diagonal elements as the -ve sum of the conductances that attach to it.
         """
-        G=np.array(nx.to_numpy_matrix(self.graph,nodelist=self.graph.nodes(),weight='conductance'))
+        G=nx.to_scipy_sparse_matrix(self.graph,nodelist=self.graph.nodes(),weight='conductance',format='lil')
+        dsum=G.sum(axis=0)
         for i in range(self.network_size):
-            for j in range(self.network_size):
-                if i==j:
-                    G[i,j]=-sum(G[i])
+            G[i,i]=-dsum[0,i]
         return G
+    def delete_sparse_rcs(self,mat,indices):
+        row_mask = np.ones(mat.shape[0], dtype=bool)
+        row_mask[indices] = False
+        col_mask = np.ones(mat.shape[1], dtype=bool)
+        col_mask[indices] = False
+        return mat[row_mask][:,col_mask]
     def make_A(self, G):
         B=np.zeros((self.network_size,len(self.voltage_sources)))
         for i in range(self.network_size):
-                if i in self.voltage_sources[:,0]:
-                    B[i,list(self.voltage_sources[:,0]).index(i)]=1
+            if i in self.voltage_sources[:,0]:
+                B[i,list(self.voltage_sources[:,0]).index(i)]=1
         D=np.zeros((len(self.voltage_sources),len(self.voltage_sources)))
         BTD=np.append(B.T,D,axis=1)
-        A=np.append(np.append(G,B,axis=1),BTD,axis=0)
-        A=np.delete(np.delete(A,self.ground_nodes,0),self.ground_nodes,1)
-        return A
+        A=sparse.hstack([G,B],format='lil')
+        A=sparse.vstack([A,BTD],format='lil')
+        A=self.delete_sparse_rcs(A,self.ground_nodes)
+        return sparse.csr_matrix(A)
     def make_z(self):
         z = np.append(np.zeros((self.network_size-len(self.ground_nodes),1)), self.voltage_sources[:,1][:,None], axis=0)
         return np.array(z)
@@ -80,7 +87,7 @@ class ConductionNetwork(object):
             #replace the abs with some sort of node-node direction rules
             self.graph.edges[n1,n2]['current']= abs(g * dV)
     def solve_mna(self):
-        mna_x=np.linalg.solve(self.make_A(self.make_G()), self.make_z())
+        mna_x=sparse.linalg.spsolve(self.make_A(self.make_G()), self.make_z())
         return mna_x
     def update(self,show=True,v=False):
         #process mna_x to seperate out relevant components
@@ -102,7 +109,7 @@ class ConductionNetwork(object):
             ax=plt.subplot(111)
         self.plot_network(ax,v=v)
         self.plot_regions(ax)
-        
+
         # ax.legend()
         if not(ax):
             plt.show()
