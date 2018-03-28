@@ -1,4 +1,4 @@
-import argparse, os, time,traceback
+import argparse, os, time,traceback,sys
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -21,6 +21,7 @@ class StickCollection(object):
         self.l=l
         self.notes=notes
         self.directory=directory
+        self.percolating=False
         if not(fname):
             self.sticks, self.intersects  = self.make_intersects_kdtree( self.make_sticks(n, l=l, pm=pm, scaling=scaling))
             self.make_cnet()
@@ -128,7 +129,6 @@ class StickCollection(object):
         # to avoid the creation of a singular adjacency matrix caused by
         # disconnected junctions becoming unconnected nodes in the cnet
         self.graph=nx.from_pandas_edgelist(self.intersects, source='stick1',target='stick2',edge_attr=True)
-        self.percolating=False
         for c in nx.connected_components(self.graph):
             if (0 in c) and (1 in c):
                 self.percolating=True
@@ -162,7 +162,7 @@ class StickCollection(object):
             # self.cnet.set_local_gate([0.5,0,0.4,1.2], 10)
             self.cnet.update()
         except:
-            traceback.print_exc()
+            traceback.print_exc(file=sys.stdout)
 
     def timestamp(self):
         return datetime.now().strftime('%y-%m-%d_%H%M%S_%f')
