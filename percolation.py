@@ -1,6 +1,8 @@
 import argparse, os, time,traceback,sys
 import numpy as np
 import pandas as pd
+import matplotlib
+matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 from network import ConductionNetwork, Resistor, Transistor
