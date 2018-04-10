@@ -1,8 +1,6 @@
 import argparse, os, time,traceback,sys
 import numpy as np
 import pandas as pd
-import matplotlib
-matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 from network import ConductionNetwork, Resistor, Transistor
@@ -14,7 +12,7 @@ from datetime import datetime
 
 
 class StickCollection(object):
-    def __init__(self,n=2,l='exp',pm=0.135,scaling=1,fname='',directory='data',notes=''):
+    def __init__(self, n=2, l='exp', pm=0.135, scaling=1, fname='', directory='data', notes=''):
         self.scaling=scaling
         self.n=n
         self.pm=pm
@@ -132,15 +130,18 @@ class StickCollection(object):
         for c in nx.connected_components(self.graph):
             if (0 in c) and (1 in c):
                 self.percolating=True
-                self.graph=self.graph.subgraph(c)
-        self.ground_nodes=[1]
-        self.voltage_sources=[[0,0.1]]
-        self.populate_graph()
-        for node in self.graph.nodes():
-            self.graph.nodes[node]['pos'] = [self.sticks.loc[node,'xc'], self.sticks.loc[node,'yc']]
-        for edge in self.graph.edges():
-            self.graph.edges[edge]['pos'] = [self.graph.edges[edge]['x'], self.graph.edges[edge]['y']]
-        return self.graph, self.ground_nodes, self.voltage_sources
+                connected_graph=self.graph.subgraph(c)
+        if self.percolating:
+            self.ground_nodes=[1]
+            self.voltage_sources=[[0,0.1]]
+            self.populate_graph()
+            for node in connected_graph.nodes():
+                connected_graph.nodes[node]['pos'] = [self.sticks.loc[node,'xc'], self.sticks.loc[node,'yc']]
+            for edge in connected_graph.edges():
+                connected_graph.edges[edge]['pos'] = [connected_graph.edges[edge]['x'], connected_graph.edges[edge]['y']]
+            return connected_graph
+        else:
+            return False,False,False
 
     def populate_graph(self):
         offmap={'ms':1000,'sm':1000, 'mm':1,'ss':1,'vs':1,'sv':1,'vm':1,'mv':1}
@@ -156,10 +157,11 @@ class StickCollection(object):
 
     def make_cnet(self):
         try:
-            self.cnet=ConductionNetwork(*self.make_graph())
+            connected_graph=self.make_graph()
             assert self.percolating, "The network is not conducting!"
+            self.cnet=ConductionNetwork(connected_graph,self.ground_nodes,self.voltage_sources)
             self.cnet.set_global_gate(0)
-            # self.cnet.set_local_gate([0.5,0,0.4,1.2], 10)
+            self.cnet.set_local_gate([0.5,0,0.16,0.667], 10)
             self.cnet.update()
         except:
             traceback.print_exc(file=sys.stdout)
@@ -187,8 +189,6 @@ class StickCollection(object):
         self.sticks.endarray=[self.get_ends(row) for row in self.sticks.values]
         print("loading intersects")
         self.intersects=pd.read_csv(fname+'_intersects.csv',index_col=0)
-        # print("Loading graph")
-        # self.graph=nx.read_yaml(fname+'_graph.yaml')
 
         if network:
             print("making cnet")
@@ -200,10 +200,18 @@ class StickCollection(object):
         self.label_clusters()
         if clustering:
             self.show_clusters(ax=axes[0])
+            axes[0].set_title("Cluster labeling")
         if junctions:
             self.show_sticks(sticks=self.sticks,intersects=self.intersects, ax=axes[1])
+            axes[1].set_title("ms labeling and junctions")
         if conduction and self.percolating:
             self.cnet.show_device(ax=axes[2])
+            axes[2].set_title("Conduction Graph")
+        for ax in axes:
+            ax.set_xticklabels(['']+['{:.1f}'.format(i/5*self.scaling) for i in range(6)])
+            ax.set_yticklabels(['']+['{:.1f}'.format(i/5*self.scaling) for i in range(6)])
+            ax.set_ylabel("$\mu m$")
+            ax.set_xlabel("$\mu m$")
         if save:
             plt.savefig(self.fname+'_'+save+'_plots.png')
         if show:
@@ -214,7 +222,7 @@ class StickCollection(object):
         if not(ax):
             fig=plt.figure(figsize=(5,5))
             ax=fig.add_subplot(111)
-        colors=np.random.rand(len(sticks),3)
+        colors=np.append([[0,0,0]], np.random.rand(len(sticks),3), axis=0)
         colorpattern=[colors[i] for i in sticks.cluster.values]
         collection=LineCollection(sticks.endarray.values,linewidth=0.5,colors=colorpattern)
         ax.add_collection(collection)
@@ -245,22 +253,10 @@ class StickCollection(object):
 
 
 
-def time_collection(n, iterations=5,scaling=5):
-    times=[]
-    from timeit import default_timer as timer
-    for i in range(iterations):
-        start = timer()
-        try:
-            collection=StickCollection(n,l=0,pm=0.135,scaling=scaling)
-        except Exception as e:
-            print(e)
-        end = timer()
-        print(end - start)
-        times.append(end - start)
-    return sum(times)/len(times)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("number",type=int)
+    parser.add_argument('-n',"--number",type=int)
     parser.add_argument("--pm",type=float,default=0.135)
     parser.add_argument("--length",default='exp')
     parser.add_argument("--scaling",type=float,default=5)
@@ -269,6 +265,7 @@ if __name__ == "__main__":
     parser.add_argument("--show", action="store_true",default=False)
     parser.add_argument('-s','--save', action="store_true",default=False)
     parser.add_argument("--time",default=0)
+    parser.add_argument('--fname',type=str,default='')
     args = parser.parse_args()
     if args.time:
         if args.time== 'series':
@@ -282,9 +279,10 @@ if __name__ == "__main__":
     elif args.test:
         collection=StickCollection(args.number,l=args.length,pm=args.pm,scaling=args.scaling)
         collection.make_trivial_sticks()
+
         collection.show_system()
     else:
-        collection=StickCollection(args.number,l=args.length,pm=args.pm,scaling=args.scaling)
+        collection=StickCollection(n=args.number,l=args.length,pm=args.pm,scaling=args.scaling,fname=args.fname)
         if args.show:
             collection.show_system(save=args.save)
         if args.save:

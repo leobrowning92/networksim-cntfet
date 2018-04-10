@@ -1,8 +1,6 @@
 import argparse
 import numpy as np
 import networkx as nx
-import matplotlib
-matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.patches as patches

@@ -4,17 +4,14 @@ from timeit import default_timer as timer
 import pandas as pd
 import networkx as nx
 from multiprocessing import Pool
-import matplotlib
-matplotlib.use("Qt5Agg")
 
 
 
 
-def measure_fullnet(n,v=True,scaling=60,remote=False,l='exp',save=True):
+
+def measure_fullnet(n, v=True, scaling=60, remote=False, l='exp', save=False, show=False):
     start = timer()
     data=pd.DataFrame(columns = ['sticks', 'size', 'density', 'nclust', 'maxclust', 'ion', 'ioff','ioff_totaltop', 'ioff_partialtop', 'runtime', 'fname'])
-    if v:
-        print("====== measuring {} sticks ======".format(n))
     try:
         collection=perc.StickCollection(n,scaling=scaling,notes='run',l=l)
         nclust=len(collection.sticks.cluster.drop_duplicates())
@@ -36,14 +33,14 @@ def measure_fullnet(n,v=True,scaling=60,remote=False,l='exp',save=True):
             print("measurement failed: error saving data")
             print("ERROR for {} sticks:\n".format(n),e)
             traceback.print_exc(file=sys.stdout)
+    if show:
+        try:
+            collection.show_system(show=False,save='on')
+        except Exception as e:
+            print("measurement failed: error saving image")
+            print("ERROR for {} sticks:\n".format(n),e)
+            traceback.print_exc(file=sys.stdout)
     if percolating:
-        if not(remote):
-            try:
-                collection.show_system(show=False,save='on')
-            except Exception as e:
-                print("measurement failed: error saving image")
-                print("ERROR for {} sticks:\n".format(n),e)
-                traceback.print_exc(file=sys.stdout)
         try:
             ion=sum(collection.cnet.source_currents)
             collection.cnet.set_global_gate(10)
@@ -67,14 +64,6 @@ def measure_fullnet(n,v=True,scaling=60,remote=False,l='exp',save=True):
         except:
             ioff_totaltop=0
             ioff_partialtop=0
-
-        if not(remote):
-            try:
-                collection.show_system(show=False,save='off')
-            except Exception as e:
-                print("measurement failed: error saving image")
-                print("ERROR for {} sticks:\n".format(n),e)
-                traceback.print_exc(file=sys.stdout)
     else:
         ion=0
         ioff=0
@@ -103,8 +92,8 @@ def measure_number_series(remote=False):
         pool.map(n_vary_local, n)
 
 def measure_number_series_compareL(remote=True):
-    nconst=[40000+n*2000 for n in range(1,10)]
-    nexp=[30000+n*500 for n in range(1,20)]
+    nconst=[40000+n*2000 for n in range(1,100)]
+    nexp=[30000+n*500 for n in range(1,200)]
     pool = Pool(os.cpu_count()-1)
     pool.map(n_vary_expL_remote, nexp)
     pool.map(n_vary_066L_remote, nconst)
@@ -112,11 +101,12 @@ def measure_number_series_compareL(remote=True):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-t",'--test',action="store_true",default=False)
-    parser.add_argument("-r",'--remote',action="store_true",default=False)
+    parser.add_argument('--show',action="store_true",default=False)
+    parser.add_argument('-s','--save',action="store_true",default=False)
     args = parser.parse_args()
 
     if args.test:
-        measure_fullnet(500,scaling=5,remote=args.remote)
+        measure_fullnet(500,scaling=5,save=args.save, show=args.show, save=args.save)
     else:
         measure_number_series(remote=args.remote)
         measure_number_series_compareL(remote=args.remote)
