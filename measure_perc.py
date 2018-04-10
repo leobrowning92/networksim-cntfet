@@ -106,7 +106,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.test:
-        measure_fullnet(500,scaling=5,save=args.save, show=args.show, save=args.save)
+        measure_fullnet(500,scaling=5,save=args.save, show=args.show)
     else:
         measure_number_series(remote=args.remote)
         measure_number_series_compareL(remote=args.remote)
