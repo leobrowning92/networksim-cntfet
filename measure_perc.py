@@ -9,7 +9,7 @@ from multiprocessing import Pool
 
 
 
-def measure_fullnet(n, v=True, scaling=60, remote=False, l='exp', save=False, show=False):
+def measure_fullnet(n,scaling=60, l='exp', save=False, show=False, v=True ,remote=False):
     start = timer()
     data=pd.DataFrame(columns = ['sticks', 'size', 'density', 'nclust', 'maxclust', 'ion', 'ioff','ioff_totaltop', 'ioff_partialtop', 'runtime', 'fname'])
     try:
@@ -97,16 +97,25 @@ def measure_number_series_compareL(remote=True):
     pool = Pool(os.cpu_count()-1)
     pool.map(n_vary_expL_remote, nexp)
     pool.map(n_vary_066L_remote, nconst)
+def measure_async(cores,start,step,number,save=False):
+    nrange=[start+i*step for i in range(number)]
+    pool=Pool(cores)
+    results=[pool.apply_async(measure_fullnet,args=(n,5,'exp',save)) for n in nrange]
+    output=[res.get() for res in results]
+    return output
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-t",'--test',action="store_true",default=False)
     parser.add_argument('--show',action="store_true",default=False)
     parser.add_argument('-s','--save',action="store_true",default=False)
+    parser.add_argument("--cores",type=int,default=1)
+    parser.add_argument("--start",type=int)
+    parser.add_argument("--step",type=int,default=0)
+    parser.add_argument("--number",type=int)
     args = parser.parse_args()
 
     if args.test:
-        measure_fullnet(500,scaling=5,save=args.save, show=args.show)
+        measure_async(2,500,0,10)
     else:
-        measure_number_series(remote=args.remote)
-        measure_number_series_compareL(remote=args.remote)
+        measure_async(args.cores, args.start, args.step, args.number, args.save)

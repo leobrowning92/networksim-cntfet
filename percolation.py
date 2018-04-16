@@ -146,7 +146,7 @@ class StickCollection(object):
             return False,False,False
 
     def populate_graph(self):
-        offmap={'ms':1000,'sm':1000, 'mm':1,'ss':1,'vs':1,'sv':1,'vm':1,'mv':1}
+        offmap={'ms':1000,'sm':1000, 'mm':1,'ss':1,'vs':1000,'sv':1000,'vm':1000,'mv':1000}
         for edge in self.graph.edges():
             self.graph.edges[edge]['component']=Transistor( off_resistance=offmap[self.graph.edges[edge]['kind']])
 
