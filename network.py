@@ -4,7 +4,6 @@ import networkx as nx
 import matplotlib
 matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.patches as patches
 import scipy.sparse as sparse
 class Transistor(object):
@@ -136,11 +135,6 @@ class ConductionNetwork(object):
             edgecurrents=nx.get_edge_attributes(self.graph,'current')
             edgeresistance=nx.get_edge_attributes(self.graph,'resistance')
             nx.draw_networkx_edge_labels(self.graph,pos, edge_labels={k:'{:.1e}A\n{:.1e}$\Omega$'.format(edgecurrents[k], edgeresistance[k]) for k in edgecurrents})
-        # divider1 = make_axes_locatable(ax1)
-        # cax1 = divider1.append_axes('right', size='5%', pad=0.5)
-        # cax2 = divider1.append_axes('right', size='5%', pad=0.5)
-        # plt.colorbar(edges,label="Current A",cax=cax2)
-        # plt.colorbar(nodes,label="Node Voltage V",cax=cax1)
     def set_global_gate(self,voltage):
         for edge in self.graph.edges:
             self.graph.edges[edge]['component'].gate_voltage=voltage
