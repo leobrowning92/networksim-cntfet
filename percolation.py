@@ -2,9 +2,6 @@ import argparse, os, time,traceback,sys
 import numpy as np
 import pandas as pd
 import matplotlib
-matplotlib.use("Qt5Agg")
-import matplotlib.pyplot as plt
-from matplotlib.collections import LineCollection
 from network import ConductionNetwork, Resistor, Transistor
 import networkx as nx
 import scipy.spatial as spatial
@@ -14,7 +11,7 @@ from datetime import datetime
 
 
 class StickCollection(object):
-    def __init__(self, n=2, l='exp', pm=0.135, scaling=1, fname='', directory='data', notes=''):
+    def __init__(self, n=2, l='exp', pm=0.135, scaling=5, fname='', directory='data', notes=''):
         self.scaling=scaling
         self.n=n
         self.pm=pm
@@ -185,71 +182,19 @@ class StickCollection(object):
         # nx.write_yaml(self.graph,self.fname+'_graph.yaml')
 
     def load_system(self,fname,network=True):
+        # need to incorporate intelligent filename reading if we want
+        # to be able to display files without manually imputting scaling
         print("loading sticks")
         self.sticks=pd.read_csv(fname+'_sticks.csv',index_col=0)
         print("recalculating endpoints")
         self.sticks.endarray=[self.get_ends(row) for row in self.sticks.values]
         print("loading intersects")
         self.intersects=pd.read_csv(fname+'_intersects.csv',index_col=0)
-
         if network:
             print("making cnet")
             self.make_cnet()
 
-    def show_system(self,clustering=True, junctions=True, conduction=True, show=True, save=False):
-        fig = plt.figure(figsize=(15,5))
-        axes=[fig.add_subplot(1,3,i+1) for i in range(3)]
-        self.label_clusters()
-        if clustering:
-            self.show_clusters(ax=axes[0])
-            axes[0].set_title("Cluster labeling")
-        if junctions:
-            self.show_sticks(sticks=self.sticks,intersects=self.intersects, ax=axes[1])
-            axes[1].set_title("ms labeling and junctions")
-        if conduction and self.percolating:
-            self.cnet.show_device(ax=axes[2])
-            axes[2].set_title("Conduction Graph")
-        for ax in axes:
-            ax.set_xticklabels(['']+['{:.1f}'.format(i/5*self.scaling) for i in range(6)])
-            ax.set_yticklabels(['']+['{:.1f}'.format(i/5*self.scaling) for i in range(6)])
-            ax.set_ylabel("$\mu m$")
-            ax.set_xlabel("$\mu m$")
-        if save:
-            plt.savefig(self.fname+'_'+save+'_plots.png')
-        if show:
-            plt.show()
 
-    def show_clusters(self,intersects=True,ax=False):
-        sticks=self.sticks
-        if not(ax):
-            fig=plt.figure(figsize=(5,5))
-            ax=fig.add_subplot(111)
-        colors=np.append([[0,0,0]], np.random.rand(len(sticks),3), axis=0)
-        colorpattern=[colors[i] for i in sticks.cluster.values]
-        collection=LineCollection(sticks.endarray.values,linewidth=0.5,colors=colorpattern)
-        ax.add_collection(collection)
-        # if intersects:
-        #     ax.scatter(self.intersects.x, self.intersects.y, c="r", s=30, linewidth=0.8, marker="x")
-        ax.set_xlim((-0.02,1.02))
-        ax.set_ylim((-0.02,1.02))
-        # ax.set_title("$n_{{clusters}}$={}\nConnected={}".format(len(self.sticks.cluster.drop_duplicates()),str(self.percolating)))
-        if not(ax):
-            plt.show()
-    def show_sticks(self,sticks,intersects,ax=False):
-        if not(ax):
-            fig=plt.figure(figsize=(5,5))
-            ax=fig.add_subplot(111)
-        stick_cmap={'s':'b','m':'r','v':'k'}
-        stick_colors=[stick_cmap[i] for i in sticks.kind]
-        collection=LineCollection(sticks.endarray.values,linewidth=0.5,colors=stick_colors)
-        ax.add_collection(collection)
-        isect_cmap={'ms':'g','sm':'g', 'mm':'k','ss':'k','vs':'k','sv':'k','vm':'k','mv':'k'}
-        isect_colors=[isect_cmap[i] for i in self.intersects.kind]
-        ax.scatter(intersects.x, intersects.y, c=isect_colors, s=20, linewidth=1, marker="x")
-        ax.set_xlim((-0.02,1.02))
-        ax.set_ylim((-0.02,1.02))
-        if not(ax):
-            plt.show()
 
 
 
@@ -281,7 +226,6 @@ if __name__ == "__main__":
     elif args.test:
         collection=StickCollection(args.number,l=args.length,pm=args.pm,scaling=args.scaling)
         collection.make_trivial_sticks()
-
         collection.show_system()
     else:
         collection=StickCollection(n=args.number,l=args.length,pm=args.pm,scaling=args.scaling,fname=args.fname)
