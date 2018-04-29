@@ -5,7 +5,10 @@ import pandas as pd
 import networkx as nx
 from multiprocessing import Pool
 
-
+def checkdir(directoryname):
+    if os.path.isdir(directoryname) == False:
+        os.system("mkdir " + directoryname)
+    pass
 
 
 
@@ -14,6 +17,7 @@ def measure_fullnet(n,scaling=60, l='exp', save=False, show=False, v=True ,remot
     data=pd.DataFrame(columns = ['sticks', 'size', 'density', 'nclust', 'maxclust', 'ion', 'ioff','ioff_totaltop', 'ioff_partialtop', 'runtime', 'fname'])
     try:
         collection=perc.StickCollection(n,scaling=scaling,notes='run',l=l)
+        collection.label_clusters()
         nclust=len(collection.sticks.cluster.drop_duplicates())
         maxclust=len(max(nx.connected_components(collection.graph)))
         fname=collection.fname
@@ -114,7 +118,7 @@ if __name__ == '__main__':
     parser.add_argument("--step",type=int,default=0)
     parser.add_argument("--number",type=int)
     args = parser.parse_args()
-
+    checkdir('data')
     if args.test:
         measure_async(2,500,0,10)
     else:

@@ -163,7 +163,7 @@ class StickCollection(object):
             assert self.percolating, "The network is not conducting!"
             self.cnet=ConductionNetwork(connected_graph,self.ground_nodes,self.voltage_sources)
             self.cnet.set_global_gate(0)
-            self.cnet.set_local_gate([0.5,0,0.16,0.667], 10)
+            # self.cnet.set_local_gate([0.5,0,0.16,0.667], 10)
             self.cnet.update()
         except:
             traceback.print_exc(file=sys.stdout)
