@@ -12,7 +12,7 @@ def checkdir(directoryname):
 
 
 
-def measure_fullnet(n,scaling=60, l='exp', save=False, show=False, v=True ,remote=False):
+def measure_fullnet(n,scaling=60, l='exp', save=False, v=True ,remote=False):
     start = timer()
     data=pd.DataFrame(columns = ['sticks', 'size', 'density', 'nclust', 'maxclust', 'ion', 'ioff','ioff_totaltop', 'ioff_partialtop', 'runtime', 'fname'])
     try:
@@ -37,13 +37,7 @@ def measure_fullnet(n,scaling=60, l='exp', save=False, show=False, v=True ,remot
             print("measurement failed: error saving data")
             print("ERROR for {} sticks:\n".format(n),e)
             traceback.print_exc(file=sys.stdout)
-    if show:
-        try:
-            collection.show_system(show=False,save='on')
-        except Exception as e:
-            print("measurement failed: error saving image")
-            print("ERROR for {} sticks:\n".format(n),e)
-            traceback.print_exc(file=sys.stdout)
+
     if percolating:
         try:
             ion=sum(collection.cnet.source_currents)
@@ -111,7 +105,6 @@ def measure_async(cores,start,step,number,save=False):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-t",'--test',action="store_true",default=False)
-    parser.add_argument('--show',action="store_true",default=False)
     parser.add_argument('-s','--save',action="store_true",default=False)
     parser.add_argument("--cores",type=int,default=1)
     parser.add_argument("--start",type=int)
