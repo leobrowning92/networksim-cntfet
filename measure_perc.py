@@ -11,7 +11,6 @@ def checkdir(directoryname):
     pass
 
 
-
 def measure_fullnet(n,scaling=60, l='exp', save=False, v=True ,remote=False):
     start = timer()
     data=pd.DataFrame(columns = ['sticks', 'size', 'density', 'nclust', 'maxclust', 'ion', 'ioff','ioff_totaltop', 'ioff_partialtop', 'runtime', 'fname'])
@@ -96,11 +95,16 @@ def measure_number_series_compareL(remote=True):
     pool.map(n_vary_expL_remote, nexp)
     pool.map(n_vary_066L_remote, nconst)
 def measure_async(cores,start,step,number,save=False):
+    starttime = timer()
     nrange=[start+i*step for i in range(number)]
     pool=Pool(cores)
     results=[pool.apply_async(measure_fullnet,args=(n,5,'exp',save)) for n in nrange]
     output=[res.get() for res in results]
-    return output
+    endtime = timer()
+    runtime=endtime - starttime
+    print('finished with a runtime of {:.0f} seconds'.format(runtime))
+    data=pd.concat(output)
+    data.to_csv('measurement_cores{}_start{}_step{}_number{}_runtime{:.0f}.csv'.format(cores, start, step, number,runtime))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -113,6 +117,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     checkdir('data')
     if args.test:
-        measure_async(2,500,0,10)
+        measure_async(2,500,0,10,save=True)
     else:
         measure_async(args.cores, args.start, args.step, args.number, args.save)
