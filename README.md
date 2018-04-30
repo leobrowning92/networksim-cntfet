@@ -42,6 +42,19 @@ Using a kdtree with a sorted length list and length dependant search radius the 
 
 ### Running remotely
 
-to get the data from the baptiste's grid run 
+to get the data from the baptiste's grid run
 
     scp -r leo@10.30.128.49:/home/leo/gitrepos/networksim-cntfet/data /home/leo/Desktop/
+
+### Running on heisenberg
+put the srun script into a seperate directory for the data runtime
+then edit the number of cores for the measure_perc.py to match the number of tasks in the SBATCH section
+then run:
+
+    sbatch srun.sh
+
+To check on the job, use:
+
+    squeue -o "%.18i %.9P %.8j %.8u %.2t %.8M %.5D %.4C %R"
+
+usage of `squeue` found [here](https://slurm.schedmd.com/squeue.html)

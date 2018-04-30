@@ -11,7 +11,7 @@ def checkdir(directoryname):
     pass
 
 
-def measure_fullnet(n,scaling=60, l='exp', save=False, v=True ,remote=False):
+def measure_fullnet(n,scaling, l='exp', save=False, v=True ,remote=False):
     start = timer()
     data=pd.DataFrame(columns = ['sticks', 'size', 'density', 'nclust', 'maxclust', 'ion', 'ioff','ioff_totaltop', 'ioff_partialtop', 'runtime', 'fname'])
     try:
@@ -94,11 +94,11 @@ def measure_number_series_compareL(remote=True):
     pool = Pool(os.cpu_count()-1)
     pool.map(n_vary_expL_remote, nexp)
     pool.map(n_vary_066L_remote, nconst)
-def measure_async(cores,start,step,number,save=False):
+def measure_async(cores,start,step,number,scaling,save=False):
     starttime = timer()
     nrange=[start+i*step for i in range(number)]
     pool=Pool(cores)
-    results=[pool.apply_async(measure_fullnet,args=(n,5,'exp',save)) for n in nrange]
+    results=[pool.apply_async(measure_fullnet,args=(n,scaling,'exp',save)) for n in nrange]
     output=[res.get() for res in results]
     endtime = timer()
     runtime=endtime - starttime
@@ -114,9 +114,10 @@ if __name__ == '__main__':
     parser.add_argument("--start",type=int)
     parser.add_argument("--step",type=int,default=0)
     parser.add_argument("--number",type=int)
+    parser.add_argument("--scaling",type=int,default=5)
     args = parser.parse_args()
     checkdir('data')
     if args.test:
         measure_async(2,500,0,10,save=True)
     else:
-        measure_async(args.cores, args.start, args.step, args.number, args.save)
+        measure_async(args.cores, args.start, args.step, args.number,args.scaling, args.save)
