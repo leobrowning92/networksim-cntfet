@@ -72,34 +72,15 @@ def measure_fullnet(n,scaling, l='exp', save=False, v=True ,remote=False):
     if fname:
         data.to_csv(fname+"_data.csv")
     return data
-def n_vary_local(n):
-    measure_fullnet(n,scaling=60)
-def n_vary_remote(n):
-    measure_fullnet(n,scaling=60,save=False)
-def n_vary_expL_remote(n):
-    measure_fullnet(n,scaling=60,remote=True)
-def n_vary_066L_remote(n):
-    measure_fullnet(n,l=0.66,scaling=60,remote=True)
-def measure_number_series(remote=False):
-    n=[1000]*1000+[1000]*1000+[14400]*1000+[28800]*1000+[36000]*1000+[54000]*100
-    pool = Pool(os.cpu_count()-1)
-    if remote:
-        pool.map(n_vary_remote, n)
-    else:
-        pool.map(n_vary_local, n)
 
-def measure_number_series_compareL(remote=True):
-    nconst=[40000+n*2000 for n in range(1,100)]
-    nexp=[30000+n*500 for n in range(1,200)]
-    pool = Pool(os.cpu_count()-1)
-    pool.map(n_vary_expL_remote, nexp)
-    pool.map(n_vary_066L_remote, nconst)
 def measure_async(cores,start,step,number,scaling,save=False):
     starttime = timer()
     nrange=[int(start+i*step) for i in range(number)]
+
     pool=Pool(cores)
     results=[pool.apply_async(measure_fullnet,args=(n,scaling,'exp',save)) for n in nrange]
     output=[res.get() for res in results]
+
     endtime = timer()
     runtime=endtime - starttime
     print('finished with a runtime of {:.0f} seconds'.format(runtime))
