@@ -34,10 +34,6 @@ nodes="1"
 mem="1024"
 disk="10gb"
 
-# set some defaults for this script
-stddir=~/.stddir
-SCRATCHDIR='/scratch/$SLURM_JOBID'
-}
 
 
 ### The main part of the script starts here ###
@@ -69,7 +65,7 @@ jobname=`echo $jobname | sed s/"\.sh$"/""/`
 pbsname=${jobname:0:15}
 # remove whitespace from names so the temp-files are not confused
 pbsname=`echo $pbsname | sed s/" "/""/g`
-stdname=$stddir/$pbsname.`date +%a-%d-%b-%Y_%H-%M-%S`
+stdname=$pbsname.`date +%a-%d-%b-%Y_%H-%M-%S`
 
 # create the batch submitfile
 submitfile=`mktemp $pbsname.XXXX`
