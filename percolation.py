@@ -11,7 +11,7 @@ from datetime import datetime
 
 
 class StickCollection(object):
-    def __init__(self, n=2, l='exp', pm=0.135, scaling=5, fname='', directory='data', notes=''):
+    def __init__(self, n=2, l='exp', pm=0.135, scaling=5, fname='', directory='data', notes='',seed=0):
         self.scaling=scaling
         self.n=n
         self.pm=pm
@@ -19,6 +19,14 @@ class StickCollection(object):
         self.notes=notes
         self.directory=directory
         self.percolating=False
+
+        #seeds are included to ensure proper randomness on slurm
+        if seed:
+            self.seed=seed
+        else:
+            self.seed=np.random.randint(low=0,high=2**32)
+        np.random.seed(self.seed)
+        
         if not(fname):
             self.sticks, self.intersects  = self.make_intersects_kdtree( self.make_sticks(n, l=l, pm=pm, scaling=scaling))
             self.make_cnet()

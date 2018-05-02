@@ -2,6 +2,7 @@ import os,argparse,traceback,sys
 import percolation as perc
 from timeit import default_timer as timer
 import pandas as pd
+import numpy as np
 import networkx as nx
 from multiprocessing import Pool
 
@@ -11,11 +12,11 @@ def checkdir(directoryname):
     pass
 
 
-def measure_fullnet(n,scaling, l='exp', save=False, v=True ,remote=False):
+def measure_fullnet(n,scaling, l='exp', save=False, seed=0, v=True ,remote=False):
     start = timer()
     data=pd.DataFrame(columns = ['sticks', 'size', 'density', 'nclust', 'maxclust', 'ion', 'ioff','ioff_totaltop', 'ioff_partialtop', 'runtime', 'fname'])
     try:
-        collection=perc.StickCollection(n,scaling=scaling,notes='run',l=l)
+        collection=perc.StickCollection(n,scaling=scaling,notes='run',l=l,seed=seed)
         collection.label_clusters()
         nclust=len(collection.sticks.cluster.drop_duplicates())
         maxclust=len(max(nx.connected_components(collection.graph)))
@@ -76,11 +77,11 @@ def measure_fullnet(n,scaling, l='exp', save=False, v=True ,remote=False):
 def measure_async(cores,start,step,number,scaling,save=False):
     starttime = timer()
     nrange=[int(start+i*step) for i in range(number)]
-
+    seeds=np.random.randint(low=0,high=2**32,size=number)
+    np.savetxt("seeds.csv", seeds, delimiter=",")
     pool=Pool(cores)
-    results=[pool.apply_async(measure_fullnet,args=(n,scaling,'exp',save)) for n in nrange]
+    results=[pool.apply_async(measure_fullnet,args=(nrange[i],scaling,'exp',save,seeds[i])) for i in range(number)]
     output=[res.get() for res in results]
-
     endtime = timer()
     runtime=endtime - starttime
     print('finished with a runtime of {:.0f} seconds'.format(runtime))
