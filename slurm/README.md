@@ -2,7 +2,7 @@
 
 for single measurements run
 
-    ./subpy.sh measurenet.sh
+    subpy -P 32  measurenet.sh
 
 where the measurement parameters are set in `measurenet.sh`
 
