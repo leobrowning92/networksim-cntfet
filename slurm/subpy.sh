@@ -9,7 +9,7 @@ usage()
    subpy - Leo's submission script pared down from Mathhias' script to handle only bash script submission.
 
  Syntax:
-  subpy [-t <time>] [-P <cpunr>] [-m <memory>] [-d <disk>] [-n <node>] <filename.com>
+  subpy [-t <time>] [-P <cpunr>] [-m <memory>] [-d <disk>] [-n <node>] <filename.sh>
 
      <time> Job time in hh:mm:ss (Default $time).
     <cpunr> Request a parallel job running on <cpunr> CPUs (Default $cpunr).
