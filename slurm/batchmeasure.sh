@@ -5,8 +5,8 @@ do
     n=$(echo $density*3600 | bc)
     echo $n
     mkdir meas_32x$density
-    echo 'python3 ~/gitrepos/networksim-cntfet/measure_perc.py -s --cores 32 --start '$n' --step 0 --number 32 --scaling 60'>>meas_32x$density/measure-density$density.sh
+    echo 'python3 ~/gitrepos/networksim-cntfet/measure_perc.py -s --cores 32 --start '$n' --step 0 --number 32 --scaling 60' > meas_32x$density/measurenet.sh
     cd meas_32x$density/
-    subpy.sh -P 32 -t 24:00:00 measure-density$density.sh
+    subpy -P 32 -t 24:00:00 measurenet.sh
     cd ..
 done
