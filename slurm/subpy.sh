@@ -33,7 +33,7 @@ cpunr="1"
 nodes="1"
 mem="1024"
 disk="10gb"
-
+}
 
 
 ### The main part of the script starts here ###
@@ -119,7 +119,7 @@ cat >> "$submitfile" << EOF
 #---- begin generic script part ----
 
 cd $PWD
-nice $PWD/$jobname.sh
+bash $PWD/$jobname.sh
 
 #---- end generic script part ----
 
