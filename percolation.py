@@ -177,7 +177,7 @@ class StickCollection(object):
         return datetime.now().strftime('%y-%m-%d_%H%M%S_%f')
 
     def make_fname(self):
-        self.notes="{}_{}sticks_{}x{}um_{}L_{}".format( self.seed(),self.n,self.scaling,self.scaling,self.l,self.notes)
+        self.notes="{}_{}sticks_{}x{}um_{}L_{}".format( self.seed,self.n,self.scaling,self.scaling,self.l,self.notes)
         fname=os.path.join(self.directory,self.notes)
         return fname
 

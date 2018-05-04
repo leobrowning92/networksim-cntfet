@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import networkx as nx
 from multiprocessing import Pool
-import uuid
+import uuid as id
 
 def checkdir(directoryname):
     if os.path.isdir(directoryname) == False:
@@ -76,7 +76,7 @@ def measure_fullnet(n,scaling, l='exp', save=False, seed=0, v=True ,remote=False
     return data
 
 def measure_async(cores,start,step,number,scaling,save=False):
-    uuid=uuid.uuid4()
+    uuid=id.uuid4()
     starttime = timer()
     nrange=[int(start+i*step) for i in range(number)]
     seeds=np.random.randint(low=0,high=2**32,size=number)
