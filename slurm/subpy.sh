@@ -13,7 +13,6 @@ usage()
 
      <time> Job time in hh:mm:ss (Default $time).
     <cpunr> Request a parallel job running on <cpunr> CPUs (Default $cpunr).
-
    <memory> Requests ram in mb per processor (no suffix, Default $mem).
      <disk> Requests diskspace per processor (mb, gb or tb suffix, Default $disk).
      <node> Requests a specific node for the job.
@@ -86,8 +85,7 @@ cat > "$submitfile" <<EOF
 #SBATCH --mem-per-cpu=$mem
 #SBATCH --workdir=$PWD
 #SBATCH --kill-on-invalid-dep=yes
-#SBATCH --mail-type=END
-#SBATCH --mail-user=$USER@localhost
+
 date
 echo "User executing this job: \$SLURM_JOB_USER"
 echo -n "We are on: " && hostname

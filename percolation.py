@@ -26,7 +26,7 @@ class StickCollection(object):
         else:
             self.seed=np.random.randint(low=0,high=2**32)
         np.random.seed(self.seed)
-        
+
         if not(fname):
             self.sticks, self.intersects  = self.make_intersects_kdtree( self.make_sticks(n, l=l, pm=pm, scaling=scaling))
             self.make_cnet()
@@ -177,7 +177,7 @@ class StickCollection(object):
         return datetime.now().strftime('%y-%m-%d_%H%M%S_%f')
 
     def make_fname(self):
-        self.notes="{}_{}sticks_{}x{}um_{}L_{}".format( self.timestamp(),self.n,self.scaling,self.scaling,self.l,self.notes)
+        self.notes="{}_{}sticks_{}x{}um_{}L_{}".format( self.seed(),self.n,self.scaling,self.scaling,self.l,self.notes)
         fname=os.path.join(self.directory,self.notes)
         return fname
 

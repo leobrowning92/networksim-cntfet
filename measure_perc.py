@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import networkx as nx
 from multiprocessing import Pool
+import uuid
 
 def checkdir(directoryname):
     if os.path.isdir(directoryname) == False:
@@ -14,7 +15,7 @@ def checkdir(directoryname):
 
 def measure_fullnet(n,scaling, l='exp', save=False, seed=0, v=True ,remote=False):
     start = timer()
-    data=pd.DataFrame(columns = ['sticks', 'size', 'density', 'nclust', 'maxclust', 'ion', 'ioff','ioff_totaltop', 'ioff_partialtop', 'runtime', 'fname'])
+    data=pd.DataFrame(columns = ['sticks', 'size', 'density', 'nclust', 'maxclust', 'ion', 'ioff','ioff_totaltop', 'ioff_partialtop', 'runtime', 'fname','seed'])
     try:
         collection=perc.StickCollection(n,scaling=scaling,notes='run',l=l,seed=seed)
         collection.label_clusters()
@@ -69,16 +70,17 @@ def measure_fullnet(n,scaling, l='exp', save=False, seed=0, v=True ,remote=False
         ioff_partialtop=0
     end = timer()
     runtime=end - start
-    data.loc[0]=[n,scaling,n/scaling**2,nclust,maxclust,ion,ioff,ioff_totaltop,ioff_partialtop,runtime,fname]
+    data.loc[0]=[n,scaling,n/scaling**2,nclust,maxclust,ion,ioff,ioff_totaltop,ioff_partialtop,runtime,fname,seed]
     if fname:
         data.to_csv(fname+"_data.csv")
     return data
 
 def measure_async(cores,start,step,number,scaling,save=False):
+    uuid=uuid.uuid4()
     starttime = timer()
     nrange=[int(start+i*step) for i in range(number)]
     seeds=np.random.randint(low=0,high=2**32,size=number)
-    np.savetxt("seeds.csv", seeds, delimiter=",")
+    np.savetxt("seeds_{}.csv".format(uuid), seeds, delimiter=",")
     pool=Pool(cores)
     results=[pool.apply_async(measure_fullnet,args=(nrange[i],scaling,'exp',save,seeds[i])) for i in range(number)]
     output=[res.get() for res in results]
@@ -86,7 +88,7 @@ def measure_async(cores,start,step,number,scaling,save=False):
     runtime=endtime - starttime
     print('finished with a runtime of {:.0f} seconds'.format(runtime))
     data=pd.concat(output)
-    data.to_csv('measurement_cores{}_start{}_step{}_number{}_runtime{:.0f}.csv'.format(cores, start, step, number,runtime))
+    data.to_csv('measurement_batch_{}.csv'.format(uuid))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
