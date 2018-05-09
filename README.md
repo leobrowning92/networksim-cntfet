@@ -17,7 +17,9 @@ the network is labeled:
 |...|...|...|...|...|...|
 |(r-1)*c|(r-1)*c+1|...|...|...|(r-1)*c+c-1=r*c-1|
 
-
+## electrical junction values:
+Fuhrer: mm=200kOhm, ss=400kOhm
+tombler : mm 400 to 600 ohm from on to off
 ## Optimization
 use cProfile and the [gprof2dot](https://github.com/jrfonseca/gprof2dot).py script to generate profiles of time spent for running the script.
 explicit number to run optimization on is:
