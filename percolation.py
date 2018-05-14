@@ -11,7 +11,8 @@ from datetime import datetime
 
 
 class StickCollection(object):
-    def __init__(self, n=2, l='exp', pm=0.135, scaling=5, fname='', directory='data', notes='',seed=0):
+    def __init__(self, n=2, l='exp', pm=0.135, scaling=5, fname='', directory='data', notes='', seed=0,
+    offmap={'ms':1000, 'sm':1000, 'mm':1, 'ss':1, 'vs':1000, 'sv':1000, 'vm':1000, 'mv':1000}):
         self.scaling=scaling
         self.n=n
         self.pm=pm
@@ -19,7 +20,7 @@ class StickCollection(object):
         self.notes=notes
         self.directory=directory
         self.percolating=False
-
+        self.offmap=offmap
         #seeds are included to ensure proper randomness on slurm
         if seed:
             self.seed=seed
@@ -141,7 +142,7 @@ class StickCollection(object):
         if self.percolating:
             self.ground_nodes=[1]
             self.voltage_sources=[[0,0.1]]
-            self.populate_graph()
+            self.populate_graph(self.offmap)
             for node in connected_graph.nodes():
                 connected_graph.nodes[node]['pos'] = [self.sticks.loc[node,'xc'], self.sticks.loc[node,'yc']]
             for edge in connected_graph.edges():
@@ -150,8 +151,8 @@ class StickCollection(object):
         else:
             return False,False,False
 
-    def populate_graph(self):
-        offmap={'ms':1000,'sm':1000, 'mm':1,'ss':1,'vs':1000,'sv':1000,'vm':1000,'mv':1000}
+    def populate_graph(self,offmap):
+
         for edge in self.graph.edges():
             self.graph.edges[edge]['component']=Transistor( off_resistance=offmap[self.graph.edges[edge]['kind']])
 

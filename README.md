@@ -7,19 +7,15 @@ The best and most comprehensive links for MNA on the web:
 [Examples](https://www.swarthmore.edu/NatSci/echeeve1/Ref/mna/MNA4.html), and
 [Matrix formation rules](https://www.swarthmore.edu/NatSci/echeeve1/Ref/mna/MNAMatrixRules.html).
 
-the network is labeled:
-
-|rows/columns->|0|1|2|...|c-1|
-|---|:---:|:---:|:---:|:---:|:---:|
-|0|0 |1  |2  | ... |c-1 |
-|1|c |c+1|c+2|...|c+c-1|
-|2|2c|2c+1|...|...|2c+c-1|
-|...|...|...|...|...|...|
-|(r-1)*c|(r-1)*c+1|...|...|...|(r-1)*c+c-1=r*c-1|
-
 ## electrical junction values:
 Fuhrer: mm=200kOhm, ss=400kOhm
-tombler : mm 400 to 600 ohm from on to off
+tombler : mm 400 to 600 ohm from on to off. compares ms junction to Ti electrode-s junction.
+Nirmalraj : 98kOhm to 2.6MOhm for 1.2nm to 14nm diameter bundles.
+Topinka : 200kOhm junction resistance from tombler. Treats ms junctions and crosses as nonconductive
+Stadermann : 100MOhm at some steps along the scan, attributed to junctions.
+Lyons : estimates interjunction resistance from 70kOhm to 3.5Mohm for bundles and tubes
+E. Lee : "demonstrate that potential barriers
+located at nanotube crossings become dominant in the OFF state of cross-junction devices, as a result of the flattening of Schottky barriers present at the electrical contacts. Consequently, under applied bias, the electrostatic potential drop, and thus the photoresponse, occurs predominantly at these positions."
 ## Optimization
 use cProfile and the [gprof2dot](https://github.com/jrfonseca/gprof2dot).py script to generate profiles of time spent for running the script.
 explicit number to run optimization on is:
