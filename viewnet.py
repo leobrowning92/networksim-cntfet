@@ -5,7 +5,6 @@ import matplotlib
 matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
-import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import networkx as nx
 from percolation import StickCollection
