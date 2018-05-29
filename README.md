@@ -1,5 +1,5 @@
-# networksim-cntfet
-## overview
+# Nanomaterial Network Simulator
+## Overview
 This project revolved around producing a simulation of the conduction through complex networks of carbon nanotubes (CNTs).
 
 The code is written in Python 3.5.
