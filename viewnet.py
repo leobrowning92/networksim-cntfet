@@ -17,8 +17,8 @@ class Netviewer(StickCollection):
 
     # from percolation
     def show_system(self,clustering=True, junctions=True, conduction=True, show=True, save=False):
-        fig = plt.figure(figsize=(15,5))
-        axes=[fig.add_subplot(1,3,i+1) for i in range(3)]
+        fig = plt.figure(figsize=(6.3,6.3))
+        axes=[fig.add_subplot(2,2,i+1) for i in range(4)]
         self.label_clusters()
         if clustering:
             self.show_sticks(ax=axes[0],junctions=False, clusters=True)
@@ -27,13 +27,18 @@ class Netviewer(StickCollection):
             self.show_sticks(ax=axes[1],junctions=True, clusters=False)
             axes[1].set_title("ms labeling and junctions")
         if conduction and self.percolating:
-            self.show_device(ax=axes[2])
-            axes[2].set_title("Conduction Graph")
+            self.plot_voltages(axes[2])
+            self.plot_regions(axes[2])
+            self.plot_currents(axes[3])
+            self.plot_regions(axes[3])
+            axes[2].set_title("Voltage")
+            axes[3].set_title("Current")
         for ax in axes:
             ax.set_xticklabels(['']+['{:.1f}'.format(i/5*self.scaling) for i in range(6)])
             ax.set_yticklabels(['']+['{:.1f}'.format(i/5*self.scaling) for i in range(6)])
             ax.set_ylabel("$\mu m$")
             ax.set_xlabel("$\mu m$")
+        plt.tight_layout()
         if save:
             plt.savefig(self.fname+'_'+save+'_plots.png')
         if show:
@@ -51,12 +56,12 @@ class Netviewer(StickCollection):
         else:
             stick_cmap={'s':'b','m':'r','v':'k'}
             stick_colors=[stick_cmap[i] for i in sticks.kind]
-        collection=LineCollection(sticks.endarray.values,linewidth=1,colors=stick_colors)
+        collection=LineCollection(sticks.endarray.values,linewidth=0.5,colors=stick_colors)
         ax.add_collection(collection)
         if junctions:
             isect_cmap={'ms':'g','sm':'g', 'mm':'k','ss':'k','vs':'k','sv':'k','vm':'k','mv':'k'}
             isect_colors=[isect_cmap[i] for i in self.intersects.kind]
-            ax.scatter(intersects.x, intersects.y, c=isect_colors, s=20, linewidth=1, marker="x")
+            ax.scatter(intersects.x, intersects.y, c=isect_colors, s=20, linewidth=0.5, marker="o",alpha=0.5)
         ax.set_xlim((-0.02,1.02))
         ax.set_ylim((-0.02,1.02))
         if not(ax):
@@ -107,10 +112,32 @@ class Netviewer(StickCollection):
         if v:
             nodelabels=nx.get_node_attributes(self.graph,'voltage')
             nx.draw_networkx_labels(self.graph,pos,labels={k:'{}\n      {:.1e}V'.format(k,nodelabels[k]) for k in nodelabels})
+
             edgecurrents=nx.get_edge_attributes(self.graph,'current')
             edgeresistance=nx.get_edge_attributes(self.graph,'resistance')
             nx.draw_networkx_edge_labels(self.graph,pos, edge_labels={k:'{:.1e}A\n{:.1e}$\Omega$'.format(edgecurrents[k], edgeresistance[k]) for k in edgecurrents})
+    def plot_currents(self,ax1,v=False):
+        pos={k:self.cnet.graph.nodes[k]['pos'] for k in self.cnet.graph.nodes}
 
+        edges,currents = zip(*nx.get_edge_attributes(self.cnet.graph,'current').items())
+
+        nodes,voltages = zip(*nx.get_node_attributes(self.cnet.graph,'voltage').items())
+
+        edges=nx.draw_networkx_edges(self.cnet.graph, pos, width=2, edgelist=edges, edge_color=currents,  edge_cmap=plt.get_cmap('YlOrRd'), ax=ax1)
+
+        nodes=nx.draw_networkx_nodes(self.cnet.graph, pos, width=2,nodelist=nodes, node_color='k', node_size=2, ax=ax1)
+
+
+    def plot_voltages(self,ax1,v=False):
+        pos={k:self.cnet.graph.nodes[k]['pos'] for k in self.cnet.graph.nodes}
+
+        edges,currents = zip(*nx.get_edge_attributes(self.cnet.graph,'current').items())
+
+        nodes,voltages = zip(*nx.get_node_attributes(self.cnet.graph,'voltage').items())
+
+        nodes=nx.draw_networkx_nodes(self.cnet.graph, pos, width=2,nodelist=nodes, node_color=voltages,  cmap=plt.get_cmap('YlOrRd'), node_size=30, ax=ax1,edgecolors='k')
+
+        edges=nx.draw_networkx_edges(self.cnet.graph, pos, width=0.5, edgelist=edges, edge_color='k', ax=ax1)
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--test", action="store_true")
