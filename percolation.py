@@ -11,8 +11,11 @@ from datetime import datetime
 
 
 class StickCollection(object):
+    """
+
+    """
     def __init__(self, n=2, l='exp', pm=0.135, scaling=5, fname='', directory='data', notes='', seed=0,
-    offmap={'ms':1000, 'sm':1000, 'mm':1, 'ss':1, 'vs':1000, 'sv':1000, 'vm':1000, 'mv':1000}):
+    onoffmap={'ms':1000, 'sm':1000, 'mm':1, 'ss':1, 'vs':1000, 'sv':1000, 'vm':1000, 'mv':1000}):
         self.scaling=scaling
         self.n=n
         self.pm=pm
@@ -20,8 +23,8 @@ class StickCollection(object):
         self.notes=notes
         self.directory=directory
         self.percolating=False
-        self.offmap=offmap
-        #seeds are included to ensure proper randomness on slurm
+        self.onoffmap=onoffmap
+        #seeds are included to ensure proper randomness on distributed computing
         if seed:
             self.seed=seed
         else:
@@ -34,6 +37,32 @@ class StickCollection(object):
             self.fname=self.make_fname()
         else:
             self.load_system(os.path.join(directory,fname))
+
+    def get_info(self):
+        print('=== input parameters ===')
+        print('number of sticks: {}'.format(self.n))
+        print('stick length : {} \u00b1 {} \u03bcm'.format(0.66,0.44))
+        print('percentage metallic: {} %'.format(self.pm))
+        print('\n=== physical network characteristics ===')
+        print('device region: {}x{} \u03bcm'.format(self.scaling,self.scaling))
+        print('stick density: {} sticks/\u03bcm^2'.format(self.n/self.scaling**2))
+        print('number of clusters: {}'.format(len(self.clustersizes)))
+        print('size of stick clusters: {:.2f} \u00b1 {:.2f} sticks'.format( self.clustersizes.mean(), self.clustersizes.std()))
+        print('maximum cluster size: {} sticks'.format( self.clustersizes.max()))
+        print('\n=== electrical characteristics ===')
+        print("device conducting: {}".format(self.percolating))
+        if self.percolating:
+            print('driving voltage: {} V'.format(self.cnet.vds))
+            current=sum(self.cnet.source_currents)
+            currentlist=nx.to_pandas_edgelist(self.cnet.graph).current
+            currentmean=currentlist.mean()
+            currentvar=currentlist.std()
+            print('device current: {:.2f} A'.format(current))
+            print('current variation (std dev across sticks): {:.2e} \u00b1 {:.2e} A'.format(currentmean, currentvar))
+        else:
+            current=np.nan
+            currentvar=np.nan
+        return [self.n, self.scaling, self.n/self.scaling**2, len(self.clustersizes), self.clustersizes.mean(), self.clustersizes.std(), self.clustersizes.max(),self.percolating, self.cnet.vds, current,currentmean, currentvar, self.fname, self.seed]
     def check_intersect(self, s1,s2):
         #assert that x intervals overlap
         if max(s1[:,0])<min(s2[:,0]) and max(s1[:,1])<min(s2[:,1]):
@@ -142,7 +171,7 @@ class StickCollection(object):
         if self.percolating:
             self.ground_nodes=[1]
             self.voltage_sources=[[0,0.1]]
-            self.populate_graph(self.offmap)
+            self.populate_graph(self.onoffmap)
             for node in connected_graph.nodes():
                 connected_graph.nodes[node]['pos'] = [self.sticks.loc[node,'xc'], self.sticks.loc[node,'yc']]
             for edge in connected_graph.edges():
@@ -151,18 +180,21 @@ class StickCollection(object):
         else:
             return False,False,False
 
-    def populate_graph(self,offmap):
+    def populate_graph(self,onoffmap):
 
         for edge in self.graph.edges():
-            self.graph.edges[edge]['component']=Transistor( off_resistance=offmap[self.graph.edges[edge]['kind']])
+            self.graph.edges[edge]['component']=Transistor( off_resistance=onoffmap[self.graph.edges[edge]['kind']])
 
     def label_clusters(self):
         i=0
-        for c in nx.connected_components(self.graph):
+        components=nx.connected_components(self.graph)
+        clustersizes=[]
+        for c in components:
+            clustersizes.append(len(c))
             for n in c:
                 self.sticks.loc[n,'cluster']=i
             i+=1
-
+        self.clustersizes=np.array(clustersizes)
     def make_cnet(self):
         try:
             connected_graph=self.make_graph()
