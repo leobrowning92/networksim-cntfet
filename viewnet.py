@@ -26,18 +26,21 @@ class Netviewer(StickCollection):
         if junctions:
             self.show_sticks(ax=axes[1],junctions=True, clusters=False)
             axes[1].set_title("ms labeling and junctions")
-        if conduction and self.percolating:
-            self.plot_voltages(axes[2])
-            self.plot_regions(axes[2])
-            self.plot_currents(axes[3])
-            self.plot_regions(axes[3])
-            axes[2].set_title("Voltage")
-            axes[3].set_title("Current")
-        for ax in axes:
-            ax.set_xticklabels(['']+['{:.1f}'.format(i/5*self.scaling) for i in range(6)])
-            ax.set_yticklabels(['']+['{:.1f}'.format(i/5*self.scaling) for i in range(6)])
-            ax.set_ylabel("$\mu m$")
-            ax.set_xlabel("$\mu m$")
+        try:
+            if conduction and self.percolating:
+                self.plot_voltages(axes[2])
+                self.plot_regions(axes[2])
+                self.plot_currents(axes[3])
+                self.plot_regions(axes[3])
+                axes[2].set_title("Voltage")
+                axes[3].set_title("Current")
+            for ax in axes:
+                ax.set_xticklabels(['']+['{:.1f}'.format(i/5*self.scaling) for i in range(6)])
+                ax.set_yticklabels(['']+['{:.1f}'.format(i/5*self.scaling) for i in range(6)])
+                ax.set_ylabel("$\mu m$")
+                ax.set_xlabel("$\mu m$")
+        except:
+            pass
         plt.tight_layout()
         if save:
             plt.savefig(self.fname+'_'+save+'_plots.png')

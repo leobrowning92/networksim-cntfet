@@ -59,10 +59,9 @@ class StickCollection(object):
             currentvar=currentlist.std()
             print('device current: {:.2f} A'.format(current))
             print('current variation (std dev across sticks): {:.2e} \u00b1 {:.2e} A'.format(currentmean, currentvar))
-        else:
-            current=np.nan
-            currentvar=np.nan
-        return [self.n, self.scaling, self.n/self.scaling**2, len(self.clustersizes), self.clustersizes.mean(), self.clustersizes.std(), self.clustersizes.max(),self.percolating, self.cnet.vds, current,currentmean, currentvar, self.fname, self.seed]
+            return [self.n, self.scaling, self.n/self.scaling**2, len(self.clustersizes), self.clustersizes.mean(), self.clustersizes.std(), self.clustersizes.max(),self.percolating, self.cnet.vds, current,currentmean, currentvar, self.fname, self.seed]
+        
+
     def check_intersect(self, s1,s2):
         #assert that x intervals overlap
         if max(s1[:,0])<min(s2[:,0]) and max(s1[:,1])<min(s2[:,1]):
@@ -204,7 +203,9 @@ class StickCollection(object):
             # self.cnet.set_local_gate([0.5,0,0.16,0.667], 10)
             self.cnet.update()
         except:
-            traceback.print_exc(file=sys.stdout)
+            connected_graph=self.make_graph()
+            # traceback.print_exc(file=sys.stdout)
+            pass
 
     def timestamp(self):
         return datetime.now().strftime('%y-%m-%d_%H%M%S_%f')

@@ -21,36 +21,54 @@ onoffmappings=[onoffmap0,onoffmap1,onoffmap2]
 
 
 def checkdir(directoryname):
+    """
+    Args:
+      directoryname: directory path to check
+    if the directory doesn't exist the directory is created.
+    """
     if os.path.isdir(directoryname) == False:
         os.system("mkdir " + directoryname)
     pass
 
-def measure_fullnet(n,scaling, l='exp', save=False, seed=0,onoffmap=1, v=True ,remote=False):
+def measure_fullnet(n,scaling, l='exp', save=False, seed=0,onoffmap=1, v=False ,remote=False):
+    """
+
+    Args:
+      n:
+      scaling:
+      l: Default value = 'exp')
+      save: Default value = False)
+      seed: Default value = 0)
+      onoffmap: Default value = 1)
+      v: Default value = True)
+      remote: Default value = False)
+
+    Returns:
+        agregated data from the run specified as a pandas dataframe in with the columns: ['sticks', 'size', 'density', 'nclust', 'maxclust', 'ion', 'ioff','gate', 'fname','seed','onoffmap']
+
+    """
     datacol=['sticks', 'size', 'density', 'nclust', 'maxclust', 'ion', 'ioff','gate', 'fname','seed','onoffmap']
     start = timer()
     data=pd.DataFrame(columns = datacol)
+
+    collection=perc.StickCollection(n,scaling=scaling,notes='run',l=l,seed=seed,onoffmap=onoffmappings[onoffmap])
+    collection.label_clusters()
+    nclust=len(collection.sticks.cluster.drop_duplicates())
     try:
-        collection=perc.StickCollection(n,scaling=scaling,notes='run',l=l,seed=seed,onoffmap=onoffmappings[onoffmap])
-        collection.label_clusters()
-        nclust=len(collection.sticks.cluster.drop_duplicates())
         maxclust=len(max(nx.connected_components(collection.graph)))
-        fname=collection.fname
-        percolating=collection.percolating
-    except Exception as e:
-        percolating=False
-        nclust=0
+    except:
         maxclust=0
-        fname=0
-        print("measurement failed: error making collection")
-        print("ERROR for {} sticks:\n".format(n),e)
-        traceback.print_exc(file=sys.stdout)
+    fname=collection.fname
+    percolating=collection.percolating
+
     if save:
         try:
             collection.save_system()
         except Exception as e:
-            print("measurement failed: error saving data")
-            print("ERROR for {} sticks:\n".format(n),e)
-            traceback.print_exc(file=sys.stdout)
+            if v:
+                print("measurement failed: error saving data")
+                print("ERROR for {} sticks:\n".format(n),e)
+                traceback.print_exc(file=sys.stdout)
 
     if percolating:
         try:
@@ -61,9 +79,10 @@ def measure_fullnet(n,scaling, l='exp', save=False, seed=0,onoffmap=1, v=True ,r
             gate='back'
 
         except Exception as e:
-            print("measurement failed: error global gating")
-            print("ERROR for {} sticks:\n".format(n),e)
-            traceback.print_exc(file=sys.stdout)
+            if v:
+                print("measurement failed: error global gating")
+                print("ERROR for {} sticks:\n".format(n),e)
+                traceback.print_exc(file=sys.stdout)
         try:
             collection.cnet.set_global_gate(0)
             collection.cnet.set_local_gate([0.217,0.5,0.167,1.2], 10)
@@ -91,7 +110,25 @@ def measure_fullnet(n,scaling, l='exp', save=False, seed=0,onoffmap=1, v=True ,r
         data.to_csv(fname+"_data.csv")
     return data
 
-def measure_async(cores, start, step, number, scaling, save=False, onoffmap=1, seeds=[]):
+def measure_async(cores, start, step, number, scaling, save=False, onoffmap=[1], seeds=[]):
+    """
+
+    Args:
+      cores: number of cores to run the measurement on
+      start: starting point for the range of number of sticks to simulate
+      step: increment for the range of number of sticks to simulate
+      number: total number of simulations to run, where the range of values simulated is specified by the start = start and end = start+sep*number
+      scaling: size of the square system to simulate, in um
+      save:  (Default value = False)
+      onoffmap: Default value = 1)
+      seeds: Default value = [])
+
+    Returns:
+        all of the data collected from each simulation with columns:
+        ['sticks', 'size', 'density', 'nclust', 'maxclust', 'ion', 'ioff','gate', 'fname','seed','onoffmap']
+
+
+    """
     uuid=id.uuid4()
     starttime = timer()
     nrange=[int(start+i*step) for i in range(number)]
@@ -109,7 +146,9 @@ def measure_async(cores, start, step, number, scaling, save=False, onoffmap=1, s
     runtime=endtime - starttime
     print('finished with a runtime of {:.0f} seconds'.format(runtime))
     data=pd.concat(output)
-    data.to_csv('measurement_batch_{}.csv'.format(uuid))
+    if save:
+        data.to_csv('measurement_batch_{}.csv'.format(uuid))
+    return data
 
 
 if __name__ == '__main__':
