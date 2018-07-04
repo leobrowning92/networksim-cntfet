@@ -7,50 +7,68 @@ import networkx as nx
 from multiprocessing import Pool
 import uuid as id
 
-#### preset offmappings  #####
+#### preset onoffmappings  #####
 ### 0 ###
 # only intertube junctions have a 10^3 on off ratio
-offmap0={'ms':1000,'sm':1000, 'mm':1,'ss':1,'vs':1,'sv':1,'vm':1,'mv':1}
+onoffmap0={'ms':1000,'sm':1000, 'mm':1,'ss':1,'vs':1,'sv':1,'vm':1,'mv':1}
 ### 1 ###
 # all ms junctions including electrodes have a 10^3 on off ratio
-offmap1={'ms':1000,'sm':1000, 'mm':1,'ss':1,'vs':1000,'sv':1000,'vm':1000,'mv':1000}
+onoffmap1={'ms':1000,'sm':1000, 'mm':1,'ss':1,'vs':1000,'sv':1000,'vm':1000,'mv':1000}
 ### 2 ###
 # all junctions including electrodes have a 10^3 on off ratio
-offmap2={'ms':1000,'sm':1000, 'mm':1000,'ss':1000,'vs':1000,'sv':1000,'vm':1000,'mv':1000}
-offmappings=[offmap0,offmap1,offmap2]
+onoffmap2={'ms':1000,'sm':1000, 'mm':1000,'ss':1000,'vs':1000,'sv':1000,'vm':1000,'mv':1000}
+onoffmappings=[onoffmap0,onoffmap1,onoffmap2]
 
 
 def checkdir(directoryname):
+    """
+    Args:
+      directoryname: directory path to check
+    if the directory doesn't exist the directory is created.
+    """
     if os.path.isdir(directoryname) == False:
         os.system("mkdir " + directoryname)
     pass
 
-def measure_fullnet(n,scaling, l='exp', save=False, seed=0,offmap=1, v=True ,remote=False):
-    datacol=['sticks', 'size', 'density', 'nclust', 'maxclust', 'ion', 'ioff','gate', 'fname','seed','offmap']
+def measure_fullnet(n,scaling, l='exp', save=False, seed=0,onoffmap=1, v=False ,remote=False):
+    """
+
+    Args:
+      n:
+      scaling:
+      l: Default value = 'exp')
+      save: Default value = False)
+      seed: Default value = 0)
+      onoffmap: Default value = 1)
+      v: Default value = True)
+      remote: Default value = False)
+
+    Returns:
+        agregated data from the run specified as a pandas dataframe in with the columns: ['sticks', 'size', 'density', 'nclust', 'maxclust', 'ion', 'ioff','gate', 'fname','seed','onoffmap']
+
+    """
+    datacol=['sticks', 'size', 'density', 'nclust', 'maxclust', 'ion', 'ioff','gate', 'fname','seed','onoffmap']
     start = timer()
     data=pd.DataFrame(columns = datacol)
+
+    collection=perc.StickCollection(n,scaling=scaling,notes='run',l=l,seed=seed,onoffmap=onoffmappings[onoffmap])
+    collection.label_clusters()
+    nclust=len(collection.sticks.cluster.drop_duplicates())
     try:
-        collection=perc.StickCollection(n,scaling=scaling,notes='run',l=l,seed=seed,offmap=offmappings[offmap])
-        collection.label_clusters()
-        nclust=len(collection.sticks.cluster.drop_duplicates())
         maxclust=len(max(nx.connected_components(collection.graph)))
-        fname=collection.fname
-        percolating=collection.percolating
-    except Exception as e:
-        percolating=False
-        nclust=0
+    except:
         maxclust=0
-        fname=0
-        print("measurement failed: error making collection")
-        print("ERROR for {} sticks:\n".format(n),e)
-        traceback.print_exc(file=sys.stdout)
+    fname=collection.fname
+    percolating=collection.percolating
+
     if save:
         try:
             collection.save_system()
         except Exception as e:
-            print("measurement failed: error saving data")
-            print("ERROR for {} sticks:\n".format(n),e)
-            traceback.print_exc(file=sys.stdout)
+            if v:
+                print("measurement failed: error saving data")
+                print("ERROR for {} sticks:\n".format(n),e)
+                traceback.print_exc(file=sys.stdout)
 
     if percolating:
         try:
@@ -61,9 +79,10 @@ def measure_fullnet(n,scaling, l='exp', save=False, seed=0,offmap=1, v=True ,rem
             gate='back'
 
         except Exception as e:
-            print("measurement failed: error global gating")
-            print("ERROR for {} sticks:\n".format(n),e)
-            traceback.print_exc(file=sys.stdout)
+            if v:
+                print("measurement failed: error global gating")
+                print("ERROR for {} sticks:\n".format(n),e)
+                traceback.print_exc(file=sys.stdout)
         try:
             collection.cnet.set_global_gate(0)
             collection.cnet.set_local_gate([0.217,0.5,0.167,1.2], 10)
@@ -76,14 +95,14 @@ def measure_fullnet(n,scaling, l='exp', save=False, seed=0,offmap=1, v=True ,rem
         except:
             ioff_totaltop=0
             ioff_partialtop=0
-        data.loc[0]=[n,scaling,n/scaling**2,nclust,maxclust,ion,ioff,'back',fname,seed,offmap]
-        data.loc[1]=[n,scaling,n/scaling**2,nclust,maxclust,ion,ioff_totaltop,'total',fname,seed,offmap]
-        data.loc[2]=[n,scaling,n/scaling**2,nclust,maxclust,ion,ioff_partialtop,'partial',fname,seed,offmap]
+        data.loc[0]=[n,scaling,n/scaling**2,nclust,maxclust,ion,ioff,'back',fname,seed,onoffmap]
+        data.loc[1]=[n,scaling,n/scaling**2,nclust,maxclust,ion,ioff_totaltop,'total',fname,seed,onoffmap]
+        data.loc[2]=[n,scaling,n/scaling**2,nclust,maxclust,ion,ioff_partialtop,'partial',fname,seed,onoffmap]
     else:
         ion=0
         ioff=0
         gate='back'
-        data.loc[0]=[n,scaling,n/scaling**2,nclust,maxclust,ion,ioff,gate,fname,seed,offmap]
+        data.loc[0]=[n,scaling,n/scaling**2,nclust,maxclust,ion,ioff,gate,fname,seed,onoffmap]
     end = timer()
     runtime=end - start
     data['runtime']=runtime
@@ -91,7 +110,25 @@ def measure_fullnet(n,scaling, l='exp', save=False, seed=0,offmap=1, v=True ,rem
         data.to_csv(fname+"_data.csv")
     return data
 
-def measure_async(cores, start, step, number, scaling, save=False, offmap=1, seeds=[]):
+def measure_async(cores, start, step, number, scaling, save=False, onoffmap=[1], seeds=[]):
+    """
+
+    Args:
+      cores: number of cores to run the measurement on
+      start: starting point for the range of number of sticks to simulate
+      step: increment for the range of number of sticks to simulate
+      number: total number of simulations to run, where the range of values simulated is specified by the start = start and end = start+sep*number
+      scaling: size of the square system to simulate, in um
+      save:  (Default value = False)
+      onoffmap: Default value = 1)
+      seeds: Default value = [])
+
+    Returns:
+        all of the data collected from each simulation with columns:
+        ['sticks', 'size', 'density', 'nclust', 'maxclust', 'ion', 'ioff','gate', 'fname','seed','onoffmap']
+
+
+    """
     uuid=id.uuid4()
     starttime = timer()
     nrange=[int(start+i*step) for i in range(number)]
@@ -101,7 +138,7 @@ def measure_async(cores, start, step, number, scaling, save=False, offmap=1, see
         np.savetxt("seeds_{}.csv".format(uuid), seeds, delimiter=",")
     pool=Pool(cores)
     results=[]
-    for omap in offmap:
+    for omap in onoffmap:
         results= results+[pool.apply_async(measure_fullnet, args=(nrange[i],scaling,'exp',save,seeds[i],omap)) for i in range(number)]
     print(len(results))
     output=[res.get() for res in results]
@@ -109,7 +146,9 @@ def measure_async(cores, start, step, number, scaling, save=False, offmap=1, see
     runtime=endtime - starttime
     print('finished with a runtime of {:.0f} seconds'.format(runtime))
     data=pd.concat(output)
-    data.to_csv('measurement_batch_{}.csv'.format(uuid))
+    if save:
+        data.to_csv('measurement_batch_{}.csv'.format(uuid))
+    return data
 
 
 if __name__ == '__main__':
@@ -121,10 +160,10 @@ if __name__ == '__main__':
     parser.add_argument("--step",type=int,default=0)
     parser.add_argument("--number",type=int)
     parser.add_argument("--scaling",type=int,default=5)
-    parser.add_argument("--offmap",nargs='*',type=int)
+    parser.add_argument("--onoffmap",nargs='*',type=int)
     args = parser.parse_args()
     checkdir('data')
     if args.test:
         measure_async(2,500,0,10,5,save=True)
     else:
-        measure_async(args.cores, args.start, args.step, args.number,args.scaling, args.save,args.offmap)
+        measure_async(args.cores, args.start, args.step, args.number,args.scaling, args.save,args.onoffmap)
