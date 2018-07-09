@@ -2,7 +2,31 @@ import argparse
 import numpy as np
 import networkx as nx
 import scipy.sparse as sparse
-class Transistor(object):
+
+class FermiDiracTransistor():
+    def __init__(self,type,offmap=0):
+        #### preset onoffmappings  #####
+        ### 0 ###
+        # only intertube junctions have a 10^3 on off ratio
+        onoffmap0={'ms':1000,'sm':1000, 'mm':1,'ss':1,'vs':1,'sv':1,'vm':1,'mv':1}
+        ### 1 ###
+        # all ms junctions including electrodes have a 10^3 on off ratio
+        onoffmap1={'ms':1000,'sm':1000, 'mm':1,'ss':1,'vs':1000,'sv':1000,'vm':1000,'mv':1000}
+        ### 2 ###
+        # all junctions including electrodes have a 10^3 on off ratio
+        onoffmap2={'ms':1000,'sm':1000, 'mm':1000,'ss':1000,'vs':1000,'sv':1000,'vm':1000,'mv':1000}
+        onoffmappings=[onoffmap0,onoffmap1,onoffmap2]
+
+        self.offG=1/onoffmappings[offmap][type]
+        self.scaling=1-self.offG
+        self.offset=self.offG
+
+    def _fermi_dirac(self,x,scaling,offset,threshold):
+        return scaling*(1/(np.exp(100*(x-threshold))+1))+offset
+    def get_conductance(self,gate=0):
+        return self._fermi_dirac(gate,self.scaling,self.offset,0)
+
+class StepTransistor(object):
     def __init__(self,on_resistance=1,off_resistance=1000,threshold_voltage=0, gate_voltage=0):
         assert on_resistance>0 and off_resistance>0, "ERROR: a component cannot have -ve resistance"
         self.on_resistance=on_resistance

@@ -2,7 +2,7 @@ import argparse, os, time,traceback,sys
 import numpy as np
 import pandas as pd
 import matplotlib
-from network import ConductionNetwork, Resistor, Transistor
+from network import ConductionNetwork, Resistor, FermiDiracTransistor
 import networkx as nx
 import scipy.spatial as spatial
 from timeit import default_timer as timer
@@ -15,7 +15,7 @@ class StickCollection(object):
 
     """
     def __init__(self, n=2, l='exp', pm=0.135, scaling=5, fname='', directory='data', notes='', seed=0,
-    onoffmap={'ms':1000, 'sm':1000, 'mm':1, 'ss':1, 'vs':1000, 'sv':1000, 'vm':1000, 'mv':1000}):
+    onoffmap=0):
         self.scaling=scaling
         self.n=n
         self.pm=pm
@@ -60,7 +60,7 @@ class StickCollection(object):
             print('device current: {:.2f} A'.format(current))
             print('current variation (std dev across sticks): {:.2e} \u00b1 {:.2e} A'.format(currentmean, currentvar))
             return [self.n, self.scaling, self.n/self.scaling**2, len(self.clustersizes), self.clustersizes.mean(), self.clustersizes.std(), self.clustersizes.max(),self.percolating, self.cnet.vds, current,currentmean, currentvar, self.fname, self.seed]
-        
+
 
     def check_intersect(self, s1,s2):
         #assert that x intervals overlap
@@ -182,7 +182,7 @@ class StickCollection(object):
     def populate_graph(self,onoffmap):
 
         for edge in self.graph.edges():
-            self.graph.edges[edge]['component']=Transistor( off_resistance=onoffmap[self.graph.edges[edge]['kind']])
+            self.graph.edges[edge]['component']=FermiDiracTransistor( self.graph.edges[edge]['kind'],onoffmap)
 
     def label_clusters(self):
         i=0

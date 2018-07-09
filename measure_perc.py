@@ -7,17 +7,7 @@ import networkx as nx
 from multiprocessing import Pool
 import uuid as id
 
-#### preset onoffmappings  #####
-### 0 ###
-# only intertube junctions have a 10^3 on off ratio
-onoffmap0={'ms':1000,'sm':1000, 'mm':1,'ss':1,'vs':1,'sv':1,'vm':1,'mv':1}
-### 1 ###
-# all ms junctions including electrodes have a 10^3 on off ratio
-onoffmap1={'ms':1000,'sm':1000, 'mm':1,'ss':1,'vs':1000,'sv':1000,'vm':1000,'mv':1000}
-### 2 ###
-# all junctions including electrodes have a 10^3 on off ratio
-onoffmap2={'ms':1000,'sm':1000, 'mm':1000,'ss':1000,'vs':1000,'sv':1000,'vm':1000,'mv':1000}
-onoffmappings=[onoffmap0,onoffmap1,onoffmap2]
+
 
 
 def checkdir(directoryname):
@@ -51,7 +41,7 @@ def measure_fullnet(n,scaling, l='exp', save=False, seed=0,onoffmap=1, v=False ,
     start = timer()
     data=pd.DataFrame(columns = datacol)
 
-    collection=perc.StickCollection(n,scaling=scaling,notes='run',l=l,seed=seed,onoffmap=onoffmappings[onoffmap])
+    collection=perc.StickCollection(n,scaling=scaling,notes='run',l=l,seed=seed,onoffmap=onoffmap)
     collection.label_clusters()
     nclust=len(collection.sticks.cluster.drop_duplicates())
     try:
@@ -144,7 +134,7 @@ def measure_async(cores, start, step, number, scaling, save=False, onoffmap=[1],
     output=[res.get() for res in results]
     endtime = timer()
     runtime=endtime - starttime
-    print('finished with a runtime of {:.0f} seconds'.format(runtime))
+    print('finished with a runtime of {:.0f} '.format(runtime))
     data=pd.concat(output)
     if save:
         data.to_csv('measurement_batch_{}.csv'.format(uuid))
