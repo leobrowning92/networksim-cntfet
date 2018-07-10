@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 import matplotlib.patches as patches
 import networkx as nx
-from percolation import StickCollection
+from percolation import StickCollection ,CNTDevice
 
-class Netviewer(StickCollection):
+class Netviewer(CNTDevice):
     def __init__(self,**kwargs):
         super(Netviewer, self).__init__(**kwargs)
         self.label_clusters()

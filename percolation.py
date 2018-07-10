@@ -15,7 +15,7 @@ class StickCollection(object):
 
     """
     def __init__(self, n=2, l='exp', pm=0.135, scaling=5, fname='', directory='data', notes='', seed=0,
-    onoffmap=0):
+    onoffmap=0, element = FermiDiracTransistor):
         self.scaling=scaling
         self.n=n
         self.pm=pm
@@ -24,6 +24,7 @@ class StickCollection(object):
         self.directory=directory
         self.percolating=False
         self.onoffmap=onoffmap
+        self.element=element
         #seeds are included to ensure proper randomness on distributed computing
         if seed:
             self.seed=seed
@@ -60,7 +61,6 @@ class StickCollection(object):
             print('device current: {:.2f} A'.format(current))
             print('current variation (std dev across sticks): {:.2e} \u00b1 {:.2e} A'.format(currentmean, currentvar))
             return [self.n, self.scaling, self.n/self.scaling**2, len(self.clustersizes), self.clustersizes.mean(), self.clustersizes.std(), self.clustersizes.max(),self.percolating, self.cnet.vds, current,currentmean, currentvar, self.fname, self.seed]
-
 
     def check_intersect(self, s1,s2):
         #assert that x intervals overlap
@@ -182,7 +182,7 @@ class StickCollection(object):
     def populate_graph(self,onoffmap):
 
         for edge in self.graph.edges():
-            self.graph.edges[edge]['component']=FermiDiracTransistor( self.graph.edges[edge]['kind'],onoffmap)
+            self.graph.edges[edge]['component']=self.element( self.graph.edges[edge]['kind'],onoffmap)
 
     def label_clusters(self):
         i=0
@@ -204,7 +204,7 @@ class StickCollection(object):
             self.cnet.update()
         except:
             connected_graph=self.make_graph()
-            # traceback.print_exc(file=sys.stdout)
+            traceback.print_exc(file=sys.stdout)
             pass
 
     def timestamp(self):
@@ -238,6 +238,27 @@ class StickCollection(object):
 
 
 
+class CNTDevice(StickCollection):
+    def __init___(self,**kwargs):
+        super(CNTDevice, self).__init__(**kwargs)
+    def global_gate(self,vg):
+        self.cnet.set_global_gate(vg)
+        self.cnet.update()
+        return sum(self.cnet.source_currents)
+    def local_gate(self,vg,area):
+        self.cnet.set_local_gate(area, vg)
+        self.cnet.update()
+        return sum(self.cnet.source_currents)
+    def gate(self,vg,gate):
+        self.global_gate(0)
+        if gate =='back':
+            self.global_gate(vg)
+        elif gate == 'partial':
+            self.local_gate(vg,[0.5,0,0.16,0.667])
+        elif gate == 'total':
+            self.local_gate(vg,[0.217,0.5,0.167,1.2])
+        self.cnet.update()
+        return sum(self.cnet.source_currents)
 
 
 

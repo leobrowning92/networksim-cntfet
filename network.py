@@ -20,12 +20,15 @@ class FermiDiracTransistor():
         self.offG=1/onoffmappings[offmap][type]
         self.scaling=1-self.offG
         self.offset=self.offG
+        self.gate_voltage=0
 
     def _fermi_dirac(self,x,scaling,offset,threshold):
-        return scaling*(1/(np.exp(100*(x-threshold))+1))+offset
-    def get_conductance(self,gate=0):
-        return self._fermi_dirac(gate,self.scaling,self.offset,0)
-
+        return scaling*(1/(np.exp(10*(x-threshold))+1))+offset
+    def get_conductance(self,gate=False):
+        if gate:
+            return self._fermi_dirac(gate, self.scaling, self.offset, 0)
+        else:
+            return self._fermi_dirac(self.gate_voltage, self.scaling, self.offset, 0)
 class StepTransistor(object):
     def __init__(self,on_resistance=1,off_resistance=1000,threshold_voltage=0, gate_voltage=0):
         assert on_resistance>0 and off_resistance>0, "ERROR: a component cannot have -ve resistance"
