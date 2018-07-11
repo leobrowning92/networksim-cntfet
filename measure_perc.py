@@ -102,7 +102,6 @@ def measure_fullnet(n,scaling, l='exp', save=False, seed=0,onoffmap=1, v=False ,
 
 def measure_async(cores, start, step, number, scaling, save=False, onoffmap=[1], seeds=[]):
     """
-
     Args:
       cores: number of cores to run the measurement on
       start: starting point for the range of number of sticks to simulate
@@ -116,8 +115,6 @@ def measure_async(cores, start, step, number, scaling, save=False, onoffmap=[1],
     Returns:
         all of the data collected from each simulation with columns:
         ['sticks', 'size', 'density', 'nclust', 'maxclust', 'ion', 'ioff','gate', 'fname','seed','onoffmap']
-
-
     """
     uuid=id.uuid4()
     starttime = timer()

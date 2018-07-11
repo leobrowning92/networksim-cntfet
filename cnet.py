@@ -42,6 +42,7 @@ class StepTransistor(object):
             return 1/self.on_resistance
         else:
             return 1/self.off_resistance
+
 class Resistor(object):
     def __init__(self,R=1):
         assert R>0, "ERROR: a component cannot have -ve resistance"

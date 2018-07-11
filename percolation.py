@@ -2,7 +2,7 @@ import argparse, os, time,traceback,sys
 import numpy as np
 import pandas as pd
 import matplotlib
-from network import ConductionNetwork, Resistor, FermiDiracTransistor
+from cnet import ConductionNetwork, Resistor, FermiDiracTransistor
 import networkx as nx
 import scipy.spatial as spatial
 from timeit import default_timer as timer

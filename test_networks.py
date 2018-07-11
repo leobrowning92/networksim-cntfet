@@ -3,7 +3,7 @@ import pytest
 import numpy as np
 import percolation as perc
 import measure_perc as mp
-from network import  Resistor, StepTransistor, FermiDiracTransistor
+from cnet import  Resistor, StepTransistor, FermiDiracTransistor
 
 # all transistor elements must accept a type variable when initializing
 class TestFermiDiracTransistor():
