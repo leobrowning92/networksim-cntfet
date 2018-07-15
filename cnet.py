@@ -3,6 +3,62 @@ import numpy as np
 import networkx as nx
 import scipy.sparse as sparse
 
+class LinExpTransistor():
+    def __init__(self,type,offmap=0):
+        self.gate_voltage=0
+        self.type=type
+
+    def simple_exp(self,vd,vg):
+        offset=1e-12
+        C=1
+        alpha=0.1
+        beta=100
+        if vd<=0:
+            return offset
+        else:
+            return C*((np.exp(-vg*alpha))*(np.exp(beta*vd)-1+offset))
+    def get_conductance(self):
+        gate=self.gate_voltage
+        vd=self.voltage_drop
+        G=self.simple_exp(vd,gate)
+        return G
+
+class NonlinearTransistor():
+    def __init__(self,type,offmap=0):
+        self.gate_voltage=0
+        self.voltage_drop=np.random.rand()*0.01
+        self.type=type
+
+    def simple_exp(self,vd,vg):
+        offset=1e-12
+        C=1
+        alpha=0.1
+        beta=100
+        if vd<=0:
+            return offset
+        else:
+            return C*((np.exp(-vg*alpha))*(np.exp(beta*vd)-1+offset))
+    def get_conductance(self):
+        gate=self.gate_voltage
+        vd=self.voltage_drop
+        G=self.simple_exp(vd,gate)
+        return G
+class LinearTransistor():
+    def __init__(self,type,offmap=3):
+        self.gate_voltage=0
+        self.voltage_drop=np.random.rand()*0.01
+        self.type=type
+
+    def lin_exp(self.vd,vg):
+        R=1
+        alpha=0.3
+        return np.exp(-alpha*vg)*R
+    def get_conductance(self):
+        gate=self.gate_voltage
+        vd=self.voltage_drop
+        G=self.lin_exp(vd,gate)
+        return G
+
 class FermiDiracTransistor():
     def __init__(self,type,offmap=0):
         #### preset onoffmappings  #####
