@@ -14,7 +14,7 @@ class StickCollection(object):
     """
 
     """
-    def __init__(self, n=2, l='exp', pm=0.135, scaling=5, fname='', directory='data', notes='', seed=0,
+    def __init__(self, n=2,scaling=5, l='exp', pm=0.135 , fname='', directory='data', notes='', seed=0,
     onoffmap=0, element = FermiDiracTransistor):
         self.scaling=scaling
         self.n=n
@@ -182,7 +182,7 @@ class StickCollection(object):
     def populate_graph(self,onoffmap):
 
         for edge in self.graph.edges():
-            self.graph.edges[edge]['component']=self.element( self.graph.edges[edge]['kind'],onoffmap)
+            self.graph.edges[edge]['component']=self.element( self.graph.edges[edge]['kind'], onoffmap )
 
     def label_clusters(self):
         i=0
@@ -259,7 +259,6 @@ class CNTDevice(StickCollection):
             self.local_gate(vg,[0.5,0,0.16,0.667])
         elif gate == 'total':
             self.local_gate(vg,[0.217,0.5,0.167,1.2])
-        self.cnet.update()
         return sum(self.cnet.source_currents)
 
 

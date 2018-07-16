@@ -6,7 +6,6 @@ import scipy.sparse as sparse
 class LinExpTransistor():
     def __init__(self,type,offmap=3):
         self.gate_voltage=0
-        self.voltage_drop=np.random.rand()*0.01
         self.type=type
 
     def lin_exp(vd,vg):

@@ -20,24 +20,51 @@ def checkdir(directoryname):
     if os.path.isdir(directoryname) == False:
         os.system("mkdir " + directoryname)
     pass
-
+def add_voltagemeas(device, data, vgrange=10, vgnum=3):
+    gate=[]
+    gatevoltage=[]
+    current=[]
+    vgvalues=np.linspace(-vgrange,vgrange,vgnum)
+    for g in ['back', 'partial', 'total']:
+        for vg in vgvalues:
+            c=device.gate(vg,g)
+            current.append(c)
+            gate.append(g)
+            gatevoltage.append(vg)
+    data.gate=gate
+    data.gatevoltage=gatevoltage
+    data.current=current
+    return data
 def single_measure(n,scaling,l='exp', dump=False, savedir='test', seed=0, onoffmap=1, v=False, element= LinExpTransistor):
-    datacol=['sticks', 'size', 'density', 'current', 'gatevoltage','gate', 'nclust', 'maxclust', 'charpath', 'clustercoeff', 'connectivity'  'fname','onoffmap', 'seed', 'runtime', 'element']
+    datacol=['sticks', 'scaling', 'density', 'current', 'gatevoltage','gate', 'nclust', 'maxclust', 'fname','onoffmap', 'seed', 'runtime', 'element']
+    start = timer()
+    if v:
+        print("=== measurement start ===")
+
+    # variables initialized
+
     d=n/scaling**2
     seed=np.random.randint(low=0,high=2**32)
     fname=os.path.join(savedir,"n{:05d}_d{:2.1f}_seed{:010d}".format(n,d,seed))
-    start = timer()
     data=pd.DataFrame(columns = datacol)
 
-    device=perc.CNTDevice(n,scaling=scaling,notes='run',l=l,seed=seed,onoffmap=onoffmap)
-    device.label_clusters()
+    #device created
+    device=perc.CNTDevice(n,scaling=scaling,notes='run',l=l,seed=seed,onoffmap=onoffmap,element=element)
+    if v:
+        print("=== physical device made t = {:0.2}".format(timer()-start))
 
+    # cluster information collected
+    device.label_clusters()
     nclust=len(device.sticks.cluster.drop_duplicates())
     try:
         maxclust=len(max(nx.connected_components(device.graph)))
     except:
         maxclust=0
+    if v:
+        print("=== cluster info collected t = {:0.2}".format(timer()-start))
 
+
+    # dump full device system of sticks and intersects
     if dump:
         try:
             device.save_system(fname)
@@ -46,7 +73,38 @@ def single_measure(n,scaling,l='exp', dump=False, savedir='test', seed=0, onoffm
                 print("measurement failed: error saving data")
                 print("ERROR for {} sticks:\n".format(n),e)
                 traceback.print_exc(file=sys.stdout)
-    percolating=device.percolating
+        if v:
+            print("=== device dump complete t = {:0.2}".format(timer()-start))
+
+
+    # perform gate voltage sweeps on all gate configurations
+    if device.percolating:
+        data=add_voltagemeas(device, data, vgrange=10, vgnum=3)
+        if v:
+            print("=== gate sweeps complete t = {:0.2}".format(timer()-start))
+    # add network characteristics
+    # connectivity=nx.average_node_connectivity(device.graph)
+    # charpath=nx.average_shortest_path_length(device.graph)
+    # clustercoeff=nx.clustering(device.graph)
+    # if v:
+    #     print("=== graph info complete t = {:0.2}".format(timer()-start))
+
+    # add parameters and constants to data
+    data.sticks=n
+    data.scaling=scaling
+    data.density=d
+
+    data.nclust=nclust
+    data.maxclust=maxclust
+
+    # data.charpath=charpath
+    # data.clustercoeff=clustercoeff
+    # data.connectivity=connectivity
+
+    data.seed=seed
+    data.element=element
+    data.onoffmap=onoffmap
+    data.fname=fname
 
     end = timer()
     runtime=end - start

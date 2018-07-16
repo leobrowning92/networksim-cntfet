@@ -50,7 +50,8 @@ class TestRandomNetwork():
 
 def test_measure(tmpdir):
     p = tmpdir.mkdir("test")
-    data,fname = mp.single_measure(500,5,dump=True,seed=0,element = LinExpTransistor,savedir=str(p))
+    data,fname = mp.single_measure(500,5,dump=True,seed=0,element = LinExpTransistor,savedir=str(p), v=True)
     assert os.path.isfile(fname+"_data.csv")
     assert os.path.isfile(fname+"_sticks.csv")
     assert os.path.isfile(fname+"_intersects.csv")
+    print(data)
