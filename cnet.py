@@ -49,14 +49,13 @@ class LinearTransistor():
         self.voltage_drop=np.random.rand()*0.01
         self.type=type
 
-    def lin_exp(self.vd,vg):
+    def lin_exp(vg):
         R=1
         alpha=0.3
         return np.exp(-alpha*vg)*R
     def get_conductance(self):
         gate=self.gate_voltage
-        vd=self.voltage_drop
-        G=self.lin_exp(vd,gate)
+        G=self.lin_exp(gate)
         return G
 
 class FermiDiracTransistor():
