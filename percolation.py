@@ -215,11 +215,13 @@ class StickCollection(object):
         fname=os.path.join(self.directory,self.notes)
         return fname
 
-    def save_system(self):
+    def save_system(self,fname=False):
         #saves the sticks DataFrame
-        self.sticks.to_csv(self.fname+'_sticks.csv')
+        if not(fname):
+            fname=self.fname
+        self.sticks.to_csv(fname+'_sticks.csv')
         #saves the intersects dataframe
-        self.intersects.to_csv(self.fname+'_intersects.csv')
+        self.intersects.to_csv(fname+'_intersects.csv')
         #save the graph object
         # nx.write_yaml(self.graph,self.fname+'_graph.yaml')
 

@@ -1,4 +1,4 @@
-import os,argparse,traceback,sys
+import os,argparse,traceback,sys,py
 import percolation as perc
 from timeit import default_timer as timer
 import pandas as pd
@@ -6,6 +6,7 @@ import numpy as np
 import networkx as nx
 from multiprocessing import Pool
 import uuid as id
+from cnet import LinExpTransistor
 
 
 
@@ -20,23 +21,42 @@ def checkdir(directoryname):
         os.system("mkdir " + directoryname)
     pass
 
+def single_measure(n,scaling,l='exp', dump=False, savedir='test', seed=0, onoffmap=1, v=False, element= LinExpTransistor):
+    datacol=['sticks', 'size', 'density', 'current', 'gatevoltage','gate', 'nclust', 'maxclust', 'charpath', 'clustercoeff', 'connectivity'  'fname','onoffmap', 'seed', 'runtime', 'element']
+    d=n/scaling**2
+    seed=np.random.randint(low=0,high=2**32)
+    fname=os.path.join(savedir,"n{:05d}_d{:2.1f}_seed{:010d}".format(n,d,seed))
+    start = timer()
+    data=pd.DataFrame(columns = datacol)
+
+    device=perc.CNTDevice(n,scaling=scaling,notes='run',l=l,seed=seed,onoffmap=onoffmap)
+    device.label_clusters()
+
+    nclust=len(device.sticks.cluster.drop_duplicates())
+    try:
+        maxclust=len(max(nx.connected_components(device.graph)))
+    except:
+        maxclust=0
+
+    if dump:
+        try:
+            device.save_system(fname)
+        except Exception as e:
+            if v:
+                print("measurement failed: error saving data")
+                print("ERROR for {} sticks:\n".format(n),e)
+                traceback.print_exc(file=sys.stdout)
+    percolating=device.percolating
+
+    end = timer()
+    runtime=end - start
+    data['runtime']=runtime
+
+    data.to_csv(fname+"_data.csv")
+    return data,fname
+
 def measure_fullnet(n,scaling, l='exp', save=False, seed=0,onoffmap=1, v=False ,remote=False):
-    """
 
-    Args:
-      n:
-      scaling:
-      l: Default value = 'exp')
-      save: Default value = False)
-      seed: Default value = 0)
-      onoffmap: Default value = 1)
-      v: Default value = True)
-      remote: Default value = False)
-
-    Returns:
-        agregated data from the run specified as a pandas dataframe in with the columns: ['sticks', 'size', 'density', 'nclust', 'maxclust', 'ion', 'ioff','gate', 'fname','seed','onoffmap']
-
-    """
     datacol=['sticks', 'size', 'density', 'nclust', 'maxclust', 'ion', 'ioff','gate', 'fname','seed','onoffmap']
     start = timer()
     data=pd.DataFrame(columns = datacol)
