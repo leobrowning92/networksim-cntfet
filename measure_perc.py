@@ -240,7 +240,7 @@ if __name__ == '__main__':
     parser.add_argument("--step",type=int,default=0)
     parser.add_argument('-n',"--number",type=int)
     parser.add_argument("--scaling",type=int,default=5)
-    parser.add_argument("--seed",type=int,default=5)
+    parser.add_argument("--seed",type=int,default=0)
     parser.add_argument("--onoffmap",type=int,default=0,help ="choose from:\n 0 = only intertube ms junctions switch")
     parser.add_argument("--element",type=int,default=0, help="Conduction element to be used in the network. choose from :\n {}".format({0:FermiDiracTransistor,1:LinExpTransistor}))
 
@@ -253,4 +253,4 @@ if __name__ == '__main__':
         else:
             measure_async(args.cores, args.start, args.step, args.number,args.scaling, args.save,args.onoffmap)
     elif args.function=="singlecore":
-        single_measure(args.number, args.scaling, savedir=args.directory, dump=args.save,v=args.verbose, element = elements[args.element], onoffmap=args.onoffmap)
+        single_measure(args.number, args.scaling, savedir=args.directory, dump=args.save,v=args.verbose, element = elements[args.element], onoffmap=args.onoffmap,seed=args.seed)
