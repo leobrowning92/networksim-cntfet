@@ -7,7 +7,7 @@ from cnet import  Resistor, StepTransistor, FermiDiracTransistor, LinExpTransist
 # all transistor elements must accept a type variable when initializing
 class TestFermiDiracTransistor():
     def setup(self):
-        self.element=FermiDiracTransistor(type='ms',offmap=0)
+        self.element=FermiDiracTransistor(type='ms',onoffmap=0)
     def test_gate_voltage(self):
         assert self.element.gate_voltage==0
     def test_conductance(self):
@@ -54,3 +54,6 @@ def test_measure(tmpdir):
     assert os.path.isfile(fname+"_data.csv")
     assert os.path.isfile(fname+"_sticks.csv")
     assert os.path.isfile(fname+"_intersects.csv")
+
+    # zero gate voltage on partial, total, and back should all be the same
+    assert len(data[data.gatevoltage==0].current.unique())==1

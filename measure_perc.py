@@ -6,9 +6,9 @@ import numpy as np
 import networkx as nx
 from multiprocessing import Pool
 import uuid as id
-from cnet import LinExpTransistor
+from cnet import LinExpTransistor,FermiDiracTransistor
 
-
+elements=[FermiDiracTransistor,LinExpTransistor]
 
 
 def checkdir(directoryname):
@@ -17,7 +17,7 @@ def checkdir(directoryname):
       directoryname: directory path to check
     if the directory doesn't exist the directory is created.
     """
-    if os.path.isdir(directoryname) == False:
+    if not(os.path.isdir(directoryname)):
         os.system("mkdir " + directoryname)
     pass
 def add_voltagemeas(device, data, vgrange=10, vgnum=3):
@@ -35,7 +35,7 @@ def add_voltagemeas(device, data, vgrange=10, vgnum=3):
     data.gatevoltage=gatevoltage
     data.current=current
     return data
-def single_measure(n,scaling,l='exp', dump=False, savedir='test', seed=0, onoffmap=1, v=False, element= LinExpTransistor):
+def single_measure(n,scaling,l='exp', dump=False, savedir='test', seed=0, onoffmap=0, v=False, element= LinExpTransistor):
     datacol=['sticks', 'scaling', 'density', 'current', 'gatevoltage','gate', 'nclust', 'maxclust', 'fname','onoffmap', 'seed', 'runtime', 'element']
     checkdir(savedir)
     start = timer()
@@ -43,7 +43,8 @@ def single_measure(n,scaling,l='exp', dump=False, savedir='test', seed=0, onoffm
     # variables initialized
 
     d=n/scaling**2
-    seed=np.random.randint(low=0,high=2**32)
+    if not(seed):
+        seed=np.random.randint(low=0,high=2**32)
     fname=os.path.join(savedir,"n{:05d}_d{:2.1f}_seed{:010d}".format(n,d,seed))
     data=pd.DataFrame(columns = datacol)
     if v:
@@ -53,7 +54,7 @@ def single_measure(n,scaling,l='exp', dump=False, savedir='test', seed=0, onoffm
     device=perc.CNTDevice(n,scaling=scaling,notes='run',l=l,seed=seed,onoffmap=onoffmap,element=element)
     if v:
         print("=== physical device made t = {:0.2}".format(timer()-start))
-
+        print("percolating : {}".format(device.percolating))
     # cluster information collected
     device.label_clusters()
     nclust=len(device.sticks.cluster.drop_duplicates())
@@ -83,6 +84,8 @@ def single_measure(n,scaling,l='exp', dump=False, savedir='test', seed=0, onoffm
         data=add_voltagemeas(device, data, vgrange=10, vgnum=3)
         if v:
             print("=== gate sweeps complete t = {:0.2}".format(timer()-start))
+    else:
+        data.current=[0]
     # add network characteristics
     # connectivity=nx.average_node_connectivity(device.graph)
     # charpath=nx.average_shortest_path_length(device.graph)
@@ -231,17 +234,23 @@ if __name__ == '__main__':
     parser.add_argument("-d",'--directory',type=str,default='')
     parser.add_argument("-t",'--test',action="store_true",default=False)
     parser.add_argument('-s','--save',action="store_true",default=False)
+    parser.add_argument('-v','--verbose',action="store_true",default=False)
     parser.add_argument("--cores",type=int,default=1)
     parser.add_argument("--start",type=int)
     parser.add_argument("--step",type=int,default=0)
     parser.add_argument('-n',"--number",type=int)
     parser.add_argument("--scaling",type=int,default=5)
-    parser.add_argument("--onoffmap",nargs='*',type=int,default=0)
+    parser.add_argument("--seed",type=int,default=5)
+    parser.add_argument("--onoffmap",type=int,default=0,help ="choose from:\n 0 = only intertube ms junctions switch")
+    parser.add_argument("--element",type=int,default=0, help="Conduction element to be used in the network. choose from :\n {}".format({0:FermiDiracTransistor,1:LinExpTransistor}))
+
     args = parser.parse_args()
+
+
     if args.function=="multicore":
         if args.test:
             measure_async(2,500,0,10,5,save=True)
         else:
             measure_async(args.cores, args.start, args.step, args.number,args.scaling, args.save,args.onoffmap)
     elif args.function=="singlecore":
-        single_measure(args.number, args.scaling, savedir=args.directory, dump=args.save)
+        single_measure(args.number, args.scaling, savedir=args.directory, dump=args.save,v=args.verbose, element = elements[args.element], onoffmap=args.onoffmap)

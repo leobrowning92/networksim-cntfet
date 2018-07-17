@@ -4,12 +4,15 @@ import networkx as nx
 import scipy.sparse as sparse
 
 class LinExpTransistor():
-    def __init__(self,type,offmap=3):
+    def __init__(self,type,onoffmap=0):
+        onoffmap0={'ms':0.5,'sm':0.5, 'mm':1e-5,'ss':1e-5,'vs':1e-5,'sv':1e-5,'vm':1e-5,'mv':1e-5}
+        onoffmappings=[onoffmap0]
         self.gate_voltage=0
         self.type=type
+        self.alpha=onoffmappings[onoffmap][type]
 
-    def lin_exp(vd,vg):
-        alpha=0.5
+    def lin_exp(self,vg):
+        alpha=self.alpha
         # normalizes conduction at 1 for -10
         normalization=np.exp(-10*alpha)#
         return np.exp(-alpha*vg)*normalization
@@ -22,20 +25,15 @@ class LinExpTransistor():
 
 class FermiDiracTransistor():
     """ uses a FD step function in VG to calculate conductance"""
-    def __init__(self,type,offmap=0):
+    def __init__(self,type,onoffmap=0):
         #### preset onoffmappings  #####
         ### 0 ###
         # only intertube junctions have a 10^3 on off ratio
-        onoffmap0={'ms':1000,'sm':1000, 'mm':1,'ss':1,'vs':1,'sv':1,'vm':1,'mv':1}
-        ### 1 ###
-        # all ms junctions including electrodes have a 10^3 on off ratio
-        onoffmap1={'ms':1000,'sm':1000, 'mm':1,'ss':1,'vs':1000,'sv':1000,'vm':1000,'mv':1000}
-        ### 2 ###
-        # all junctions including electrodes have a 10^3 on off ratio
-        onoffmap2={'ms':1000,'sm':1000, 'mm':1000,'ss':1000,'vs':1000,'sv':1000,'vm':1000,'mv':1000}
-        onoffmappings=[onoffmap0,onoffmap1,onoffmap2]
+        #designed to match onoffmap from LinExpTransistor
+        onoffmap0={'ms':1/5e-5,'sm':1/5e-5, 'mm':1,'ss':1,'vs':1,'sv':1,'vm':1,'mv':1}
+        onoffmappings=[onoffmap0]
 
-        self.offG=1/onoffmappings[offmap][type]
+        self.offG=1/onoffmappings[onoffmap][type]
         self.scaling=1-self.offG
         self.offset=self.offG
         self.gate_voltage=0
