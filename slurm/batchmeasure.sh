@@ -3,9 +3,9 @@
 for density in 4 9 10 11 14 20
 do
     n=$(echo $density*3600 | bc)
-    mkdir meas_32x$density
-    echo 'python3 ~/gitrepos/networksim-cntfet/measure_perc.py -s --cores 32 --start '$n' --step 0 --number 32 --scaling 60' > meas_32x$density/measurenet.sh
-    cd meas_32x$density/
-    subpy -P 32 -t 24:00:00 measurenet.sh
-    cd ..
+    for x in {1..10}
+    do
+        echo 'python3 ~/gitrepos/networksim-cntfet/measure_perc.py singlecore -s  -n '$n' --scaling 60 --onoffmap 0 --element 1 --seed '$x > mnet$density's'$x.sh
+        subpy -P 1 -t 24:00:00 mnet$density's'$x.sh
+    done
 done
