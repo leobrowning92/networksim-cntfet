@@ -54,4 +54,3 @@ def test_measure(tmpdir):
     assert os.path.isfile(fname+"_data.csv")
     assert os.path.isfile(fname+"_sticks.csv")
     assert os.path.isfile(fname+"_intersects.csv")
-    print(data)

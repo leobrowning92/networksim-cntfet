@@ -1,4 +1,4 @@
-import os,argparse,traceback,sys,py
+import os,argparse,traceback,sys,py,textwrap
 import percolation as perc
 from timeit import default_timer as timer
 import pandas as pd
@@ -37,9 +37,8 @@ def add_voltagemeas(device, data, vgrange=10, vgnum=3):
     return data
 def single_measure(n,scaling,l='exp', dump=False, savedir='test', seed=0, onoffmap=1, v=False, element= LinExpTransistor):
     datacol=['sticks', 'scaling', 'density', 'current', 'gatevoltage','gate', 'nclust', 'maxclust', 'fname','onoffmap', 'seed', 'runtime', 'element']
+    checkdir(savedir)
     start = timer()
-    if v:
-        print("=== measurement start ===")
 
     # variables initialized
 
@@ -47,6 +46,8 @@ def single_measure(n,scaling,l='exp', dump=False, savedir='test', seed=0, onoffm
     seed=np.random.randint(low=0,high=2**32)
     fname=os.path.join(savedir,"n{:05d}_d{:2.1f}_seed{:010d}".format(n,d,seed))
     data=pd.DataFrame(columns = datacol)
+    if v:
+        print("=== measurement start ===\nn{:05d}_d{:2.1f}_seed{:010d}".format( n, d, seed))
 
     #device created
     device=perc.CNTDevice(n,scaling=scaling,notes='run',l=l,seed=seed,onoffmap=onoffmap,element=element)
@@ -105,12 +106,16 @@ def single_measure(n,scaling,l='exp', dump=False, savedir='test', seed=0, onoffm
     data.element=element
     data.onoffmap=onoffmap
     data.fname=fname
-
+    if v:
+        print("=== data added to frame t = {:0.2}".format(timer()-start))
     end = timer()
     runtime=end - start
     data['runtime']=runtime
 
     data.to_csv(fname+"_data.csv")
+    if v:
+        print("=== data saved t = {:0.2}".format(timer()-start))
+        print("=== measurement done ===")
     return data,fname
 
 def measure_fullnet(n,scaling, l='exp', save=False, seed=0,onoffmap=1, v=False ,remote=False):
@@ -217,18 +222,27 @@ def measure_async(cores, start, step, number, scaling, save=False, onoffmap=[1],
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser( formatter_class=argparse.RawDescriptionHelpFormatter, description=textwrap.dedent("""\
+            script for handling the measurement of a system
+            designed to interact with the shell.
+            """))
+    parser.add_argument("function", type=str, choices=["multicore","singlecore"],
+        help="measurement function to use: %(choices)s")
+    parser.add_argument("-d",'--directory',type=str,default='')
     parser.add_argument("-t",'--test',action="store_true",default=False)
     parser.add_argument('-s','--save',action="store_true",default=False)
     parser.add_argument("--cores",type=int,default=1)
     parser.add_argument("--start",type=int)
     parser.add_argument("--step",type=int,default=0)
-    parser.add_argument("--number",type=int)
+    parser.add_argument('-n',"--number",type=int)
     parser.add_argument("--scaling",type=int,default=5)
-    parser.add_argument("--onoffmap",nargs='*',type=int)
+    parser.add_argument("--onoffmap",nargs='*',type=int,default=0)
     args = parser.parse_args()
     checkdir('data')
-    if args.test:
-        measure_async(2,500,0,10,5,save=True)
-    else:
-        measure_async(args.cores, args.start, args.step, args.number,args.scaling, args.save,args.onoffmap)
+    if args.function=="multicore":
+        if args.test:
+            measure_async(2,500,0,10,5,save=True)
+        else:
+            measure_async(args.cores, args.start, args.step, args.number,args.scaling, args.save,args.onoffmap)
+    elif args.function=="singlecore":
+        single_measure(args.number, args.scaling, savedir=args.directory, dump=args.save)
