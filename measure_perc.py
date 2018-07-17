@@ -238,7 +238,6 @@ if __name__ == '__main__':
     parser.add_argument("--scaling",type=int,default=5)
     parser.add_argument("--onoffmap",nargs='*',type=int,default=0)
     args = parser.parse_args()
-    checkdir('data')
     if args.function=="multicore":
         if args.test:
             measure_async(2,500,0,10,5,save=True)
