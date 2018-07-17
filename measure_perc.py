@@ -1,4 +1,4 @@
-import os,argparse,traceback,sys,py,textwrap
+import os,argparse,traceback,sys,textwrap
 import percolation as perc
 from timeit import default_timer as timer
 import pandas as pd
