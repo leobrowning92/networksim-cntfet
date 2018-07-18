@@ -10,7 +10,7 @@ class LinExpTransistor():
         # m-s and electrode-s switching from G=1 to G=5e-5
         onoffmap1={'ms':0.5,'sm':0.5, 'mm':1e-5,'ss':1e-5,'vs':0.5,'sv':0.5,'vm':1e-5,'mv':1e-5}
         # m-s, s-s and electrode-s switching from G=1 to G=5e-5
-        onoffmap1={'ms':0.5,'sm':0.5, 'mm':1e-5,'ss':0.5,'vs':0.5,'sv':0.5,'vm':1e-5,'mv':1e-5}
+        onoffmap2={'ms':0.5,'sm':0.5, 'mm':1e-5,'ss':0.5,'vs':0.5,'sv':0.5,'vm':1e-5,'mv':1e-5}
         onoffmappings=[onoffmap0,onoffmap1,onoffmap2]
         self.gate_voltage=0
         self.type=type
