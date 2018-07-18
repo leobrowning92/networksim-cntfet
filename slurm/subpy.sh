@@ -27,6 +27,7 @@ exit 0
 set_defaults()
 {
 # set defaults for the queueing system
+# Acceptable time formats include "minutes", "minutes:seconds", "hours:minutes:seconds", "days-hours", "days-hours:minutes" and "days-hours:minutes:seconds".
 time="24:00:00"
 cpunr="1"
 nodes="1"
