@@ -54,6 +54,6 @@ def test_measure(tmpdir):
     assert os.path.isfile(fname+"_data.csv")
     assert os.path.isfile(fname+"_sticks.csv")
     assert os.path.isfile(fname+"_intersects.csv")
-
+    print(fname)
     # zero gate voltage on partial, total, and back should all be the same
     assert len(data[data.gatevoltage==0].current.unique())==1

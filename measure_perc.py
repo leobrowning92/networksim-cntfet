@@ -45,7 +45,7 @@ def single_measure(n,scaling,l='exp', dump=False, savedir='test', seed=0, onoffm
     d=n/scaling**2
     if not(seed):
         seed=np.random.randint(low=0,high=2**32)
-    fname=os.path.join(savedir,"n{:05d}_d{:2.1f}_seed{:010d}".format(n,d,seed))
+    fname=os.path.join(savedir,"mnet{:2.1f}_s{}_l{}_om{}_el{}_seed{:010d}".format(d,scaling,l,onoffmap,elements.index(element),seed))
     data=pd.DataFrame(columns = datacol)
     if v:
         print("=== measurement start ===\nn{:05d}_d{:2.1f}_seed{:010d}".format( n, d, seed))
