@@ -44,6 +44,7 @@ class Netviewer(CNTDevice):
         plt.tight_layout()
         if save:
             plt.savefig(self.fname+'_'+save+'_plots.png')
+            plt.savefig(self.fname+'_'+save+'_plots.pdf')
         if show:
             plt.show()
         pass

@@ -37,6 +37,7 @@ class StickCollection(object):
             self.make_cnet()
             self.fname=self.make_fname()
         else:
+            self.fname=fname
             self.load_system(os.path.join(directory,fname))
 
     def get_info(self):
