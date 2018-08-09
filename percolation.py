@@ -2,7 +2,7 @@ import argparse, os, time,traceback,sys
 import numpy as np
 import pandas as pd
 import matplotlib
-from cnet import ConductionNetwork, Resistor, FermiDiracTransistor
+from cnet import ConductionNetwork, Resistor, FermiDiracTransistor, LinExpTransistor
 import networkx as nx
 import scipy.spatial as spatial
 from timeit import default_timer as timer
@@ -15,7 +15,7 @@ class StickCollection(object):
 
     """
     def __init__(self, n=2,scaling=5, l='exp', pm=0.135 , fname='', directory='data', notes='', seed=0,
-    onoffmap=0, element = FermiDiracTransistor):
+    onoffmap=0, element = LinExpTransistor):
         self.scaling=scaling
         self.n=n
         self.pm=pm

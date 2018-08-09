@@ -6,6 +6,7 @@ matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 import matplotlib.patches as patches
+import matplotlib.tri as tri
 import networkx as nx
 from percolation import StickCollection ,CNTDevice
 
@@ -157,6 +158,43 @@ class Netviewer(CNTDevice):
 
         edges=nx.draw_networkx_edges(self.cnet.graph, pos, width=0.5, edgelist=edges, edge_color='k', ax=ax1)
         pass
+
+    def plot_contour(self,value,ax=False):
+        if value=='current':
+            z=np.array(list(nx.get_edge_attributes(self.cnet.graph,value).values()))
+            pos=np.array(list(nx.get_edge_attributes(self.cnet.graph,'pos').values()))
+        if value=='voltage':
+            z=np.array(list(nx.get_node_attributes(self.cnet.graph,value).values()))
+            pos=np.array(list(nx.get_node_attributes(self.cnet.graph,'pos').values()))
+        x=pos[:,0]
+        y=pos[:,1]
+
+
+        #creat grid values
+        xi = np.linspace(0,1,100)
+        yi = np.linspace(0,1,100)
+
+        # Perform linear interpolation of the data (x,y)
+        # on a grid defined by (xi,yi)
+        triang = tri.Triangulation(x, y)
+        interpolator = tri.LinearTriInterpolator(triang, z)
+        Xi, Yi = np.meshgrid(xi, yi)
+        zi = interpolator(Xi, Yi)
+
+        if not(ax):
+            fig, ax = plt.subplots(1)
+        ax.contour(xi, yi, zi, 14, linewidths=0.5, colors='k')
+        cntr1 = ax.contourf(xi, yi, zi, 14, cmap="viridis",alpha=0.7)
+
+        fig.colorbar(cntr1, ax=ax,label=value)
+    #     ax.plot(x, y, 'wo', ms=3)
+        ax.axis((0,1,0,1))
+        ax.set_xticklabels(['{:.1f}'.format(i/5*self.scaling) for i in range(6)])
+        ax.set_yticklabels(['{:.1f}'.format(i/5*self.scaling) for i in range(6)])
+        ax.set_ylabel("$\mu m$")
+        ax.set_xlabel("$\mu m$")
+        if not(ax):
+            plt.show()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
