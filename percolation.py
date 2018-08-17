@@ -253,7 +253,8 @@ class CNTDevice(StickCollection):
         self.cnet.update()
         return sum(self.cnet.source_currents)
     def gate(self,vg,gate):
-        self.global_gate(0)
+        self.cnet.gate_areas=[]
+        self.cnet.set_global_gate(0)
         if gate =='back':
             self.global_gate(vg)
         elif gate == 'partial':
