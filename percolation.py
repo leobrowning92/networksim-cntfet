@@ -8,7 +8,10 @@ import scipy.spatial as spatial
 from timeit import default_timer as timer
 from datetime import datetime
 
-
+class TestClass(object):
+    def __init__(self):
+        print("testclass initialized")
+        self.testattribute=1
 
 class StickCollection(object):
     """
@@ -242,8 +245,12 @@ class StickCollection(object):
 
 
 class CNTDevice(StickCollection):
-    def __init___(self,**kwargs):
-        super(CNTDevice, self).__init__(**kwargs)
+    def __init__(self,**kwargs):
+        super().__init__(**kwargs)
+        self.gatetype='back'
+        self.gatevoltage=0
+    def dummy(self):
+        print("dummy ran")
     def global_gate(self,vg):
         self.cnet.set_global_gate(vg)
         self.cnet.update()
@@ -253,6 +260,8 @@ class CNTDevice(StickCollection):
         self.cnet.update()
         return sum(self.cnet.source_currents)
     def gate(self,vg,gate):
+        self.gatetype=gate
+        self.gatevoltage=vg
         self.cnet.gate_areas=[]
         self.cnet.set_global_gate(0)
         if gate =='back':

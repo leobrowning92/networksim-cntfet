@@ -78,8 +78,6 @@ class Netviewer(CNTDevice):
             plt.show()
         return fig, axes
 
-
-
     def show_sticks(self,ax=False, clusters=False, junctions=True):
         sticks=self.sticks
         intersects=self.intersects
@@ -173,8 +171,6 @@ class Netviewer(CNTDevice):
         nodes=nx.draw_networkx_nodes(self.cnet.graph, pos, width=1,nodelist=nodes, node_color='k', node_size=1, ax=ax1)
         pass
 
-
-
     def plot_voltages(self,ax1,v=False):
         pos={k:self.cnet.graph.nodes[k]['pos'] for k in self.cnet.graph.nodes}
 
@@ -187,7 +183,7 @@ class Netviewer(CNTDevice):
         edges=nx.draw_networkx_edges(self.cnet.graph, pos, width=0.5, edgelist=edges, edge_color='k', ax=ax1)
         pass
 
-    def plot_contour(self,value,ax=False):
+    def plot_contour(self,value,scale=True,ax=False,show=False,save=False):
         if value=='current':
             z=np.array(list(nx.get_edge_attributes(self.cnet.graph,value).values()))
             pos=np.array(list(nx.get_edge_attributes(self.cnet.graph,'pos').values()))
@@ -212,23 +208,35 @@ class Netviewer(CNTDevice):
         zi = interpolator(Xi, Yi)
 
         if not(ax):
-            fig, ax = plt.subplots(1)
+            fig, ax = plt.subplots(1,figsize=(3.15,3.15))
+            ax.set_title("{} gate = {:04.1f} V".format(self.gatetype,float(self.gatevoltage)))
         # ax.contour(xi, yi, zi, 14, linewidths=0.5, colors='k')
         cntr1 = ax.contourf(xi, yi, zi, 8, cmap="YlOrRd",alpha=0.7)
-        if not(ax):
-            fig.colorbar(cntr1, ax=ax,label=value)
+        # if not(ax):
+            # fig.colorbar(cntr1, ax=ax,label=value)
         #     ax.plot(x, y, 'wo', ms=3)
-            ax.axis((0,1,0,1))
-            ax.set_xticklabels(['{:.1f}'.format(i/5*self.scaling) for i in range(6)])
-            ax.set_yticklabels(['{:.1f}'.format(i/5*self.scaling) for i in range(6)])
-            ax.set_ylabel("$\mu m$")
-            ax.set_xlabel("$\mu m$")
-        axins = inset_axes(ax, width="5%",  height="40%", loc=3, bbox_to_anchor=(0.07, 0.07, 1, 1), bbox_transform=ax.transAxes, borderpad=0)
-        values=[0,zi.max()]
-        cbar=plt.colorbar(cntr1, cax=axins,ticks=values,format='%.0e')
-        cbar.set_label(label,labelpad=-15)
-        if not(ax):
+            # ax.axis((0,1,0,1))
+        ax.set_yticks([0,0.2,0.4,0.6,0.8,1])
+        ax.set_yticklabels(['{:.0f}'.format(i/5*self.scaling) for i in range(6)])
+        ax.set_xticks([0,0.2,0.4,0.6,0.8,1])
+        ax.set_xticklabels(['{:.0f}'.format(i/5*self.scaling) for i in range(6)])
+        ax.set_ylabel("$\mu m$")
+        ax.set_xlabel("$\mu m$")
+
+
+        if scale:
+            axins = inset_axes(ax, width="40%",  height="5%", loc=9, bbox_to_anchor=(0, 0, 1, 1), bbox_transform=ax.transAxes, borderpad=0)
+            values=[0,zi.max()]
+            cbar=plt.colorbar(cntr1, cax=axins,ticks=values,format='%.0e', orientation='horizontal')
+            # cbar.set_ticks([cmin+(0.1*range),cmax-(0.1*range)])
+            cbar.set_ticklabels(["{:.2f}".format(values[0]),"{:.2f}".format(values[1])])
+            cbar.set_label(label,labelpad=-10)
+        if show:
             plt.show()
+        if ax and save:
+            plt.tight_layout()
+            plt.savefig("{}.png".format(save))
+            plt.savefig("{}.pdf".format(save))
         pass
 
 if __name__ == "__main__":
