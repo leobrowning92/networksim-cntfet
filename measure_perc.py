@@ -51,7 +51,7 @@ def single_measure(n,scaling,l='exp', dump=False, savedir='test', seed=0, onoffm
         print("=== measurement start ===\nn{:05d}_d{:2.1f}_seed{:010d}".format( n, d, seed))
 
     #device created
-    device=perc.CNTDevice(n,scaling=scaling,notes='run',l=l,seed=seed,onoffmap=onoffmap,element=element)
+    device=perc.CNTDevice(n=n,scaling=scaling,notes='run',l=l,seed=seed,onoffmap=onoffmap,element=element)
     if v:
         print("=== physical device made t = {:0.2}".format(timer()-start))
         print("percolating : {}".format(device.percolating))
