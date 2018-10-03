@@ -232,14 +232,14 @@ class StickCollection(object):
     def load_system(self,fname,network=True):
         # need to incorporate intelligent filename reading if we want
         # to be able to display files without manually imputting scaling
-        print("loading sticks")
+        # print("loading sticks")
         self.sticks=pd.read_csv(fname+'_sticks.csv',index_col=0)
-        print("recalculating endpoints")
+        # print("recalculating endpoints")
         self.sticks.endarray=[self.get_ends(row) for row in self.sticks.values]
-        print("loading intersects")
+        # print("loading intersects")
         self.intersects=pd.read_csv(fname+'_intersects.csv',index_col=0)
         if network:
-            print("making cnet")
+            # print("making cnet")
             self.make_cnet()
 
 

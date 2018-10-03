@@ -208,7 +208,7 @@ class Netviewer(CNTDevice):
         zi = interpolator(Xi, Yi)
 
         if not(ax):
-            fig, ax = plt.subplots(1,figsize=(3.15,3.15))
+            fig, ax = plt.subplots(1,figsize=(6.3,6.3))
             ax.set_title("{} gate = {:04.1f} V".format(self.gatetype,float(self.gatevoltage)))
         # ax.contour(xi, yi, zi, 14, linewidths=0.5, colors='k')
         cntr1 = ax.contourf(xi, yi, zi, 8, cmap="YlOrRd",alpha=0.7)
@@ -237,6 +237,7 @@ class Netviewer(CNTDevice):
             plt.tight_layout()
             plt.savefig("{}.png".format(save))
             plt.savefig("{}.pdf".format(save))
+            plt.close()
         pass
 
 if __name__ == "__main__":
