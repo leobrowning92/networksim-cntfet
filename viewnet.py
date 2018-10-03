@@ -216,12 +216,13 @@ class Netviewer(CNTDevice):
             # fig.colorbar(cntr1, ax=ax,label=value)
         #     ax.plot(x, y, 'wo', ms=3)
             # ax.axis((0,1,0,1))
-        ax.set_yticks([0,0.2,0.4,0.6,0.8,1])
-        ax.set_yticklabels(['{:.0f}'.format(i/5*self.scaling) for i in range(6)])
-        ax.set_xticks([0,0.2,0.4,0.6,0.8,1])
-        ax.set_xticklabels(['{:.0f}'.format(i/5*self.scaling) for i in range(6)])
-        ax.set_ylabel("$\mu m$")
-        ax.set_xlabel("$\mu m$")
+        if save:
+            ax.set_yticks([0,0.2,0.4,0.6,0.8,1])
+            ax.set_yticklabels(['{:.0f}'.format(i/5*self.scaling) for i in range(6)])
+            ax.set_xticks([0,0.2,0.4,0.6,0.8,1])
+            ax.set_xticklabels(['{:.0f}'.format(i/5*self.scaling) for i in range(6)])
+            ax.set_ylabel("$\mu m$")
+            ax.set_xlabel("$\mu m$")
 
 
         if scale:
@@ -229,7 +230,7 @@ class Netviewer(CNTDevice):
             values=[0,zi.max()]
             cbar=plt.colorbar(cntr1, cax=axins,ticks=values,format='%.0e', orientation='horizontal')
             # cbar.set_ticks([cmin+(0.1*range),cmax-(0.1*range)])
-            cbar.set_ticklabels(["{:.2f}".format(values[0]),"{:.2f}".format(values[1])])
+            cbar.set_ticklabels(["{:.1f}".format(values[0]),"{:.0e}".format(values[1])])
             cbar.set_label(label,labelpad=-10)
         if show:
             plt.show()
