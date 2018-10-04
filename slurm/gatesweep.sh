@@ -45,7 +45,7 @@ echo 'python3 ~/gitrepos/networksim-cntfet/measure_perc.py singlecore -s -v  -n 
 subpy -P 1 -t 2-0 mns$seed'om'$omap'd'$density.sh
 
 density=12
-seed=41991611272
+seed=4191611272
 n=$(echo $density*3600 | bc)
 n=${n%.*}
 echo 'python3 ~/gitrepos/networksim-cntfet/measure_perc.py singlecore -s -v  -n '$n' --scaling 60 --onoffmap '$omap' --element 1 --seed '$seed' --vgnum=11' > mns$seed'om'$omap'd'$density.sh
