@@ -37,7 +37,7 @@ class Netviewer(CNTDevice):
 
     # from percolation
     def show_system(self,clustering=True, junctions=True, conduction=True, show=True, save=False,figsize=(6.3,4)):
-        fig, axes = plt.subplots(nrows=2,ncols=3,figsize=figsize, sharex=True, sharey=True, gridspec_kw={'wspace':0.1, 'hspace':0.025})
+        fig, axes = plt.subplots(nrows=2,ncols=3,figsize=figsize, sharex=True, sharey=True, gridspec_kw={'wspace':0.1, 'hspace':0.05})
         axes=axes.flat
         self.label_clusters()
         if clustering:
@@ -71,7 +71,9 @@ class Netviewer(CNTDevice):
             ax.set_xticklabels(['{:.0f}'.format(i/5*self.scaling) for i in range(6)])
             ax.set_xlabel("$\mu m$")
         plt.tight_layout()
+        print(save)
         if save:
+            print("saving system at {}".format(self.fname))
             plt.savefig(self.fname+'_plots.png')
             plt.savefig(self.fname+'_plots.pdf')
         if show:
@@ -183,7 +185,7 @@ class Netviewer(CNTDevice):
         edges=nx.draw_networkx_edges(self.cnet.graph, pos, width=0.5, edgelist=edges, edge_color='k', ax=ax1)
         pass
 
-    def plot_contour(self,value,scale=True,ax=False,show=False,save=False):
+    def plot_contour(self,value,scale=True,ax=False,show=False,save=False,colormap="YlOrRd"):
         if value=='current':
             z=np.array(list(nx.get_edge_attributes(self.cnet.graph,value).values()))
             pos=np.array(list(nx.get_edge_attributes(self.cnet.graph,'pos').values()))
@@ -211,12 +213,12 @@ class Netviewer(CNTDevice):
             fig, ax = plt.subplots(1,figsize=(6.3,6.3))
             ax.set_title("{} gate = {:04.1f} V".format(self.gatetype,float(self.gatevoltage)))
         # ax.contour(xi, yi, zi, 14, linewidths=0.5, colors='k')
-        cntr1 = ax.contourf(xi, yi, zi, 8, cmap="YlOrRd",alpha=0.7)
+        cntr1 = ax.contourf(xi, yi, zi, 8, cmap=colormap,alpha=0.7)
         # if not(ax):
             # fig.colorbar(cntr1, ax=ax,label=value)
         #     ax.plot(x, y, 'wo', ms=3)
             # ax.axis((0,1,0,1))
-        if save:
+        if save or show:
             ax.set_yticks([0,0.2,0.4,0.6,0.8,1])
             ax.set_yticklabels(['{:.0f}'.format(i/5*self.scaling) for i in range(6)])
             ax.set_xticks([0,0.2,0.4,0.6,0.8,1])

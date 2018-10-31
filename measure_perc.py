@@ -17,6 +17,8 @@ def checkdir(directoryname):
       directoryname: directory path to check
     if the directory doesn't exist the directory is created.
     """
+    if not(directoryname):
+        pass
     if not(os.path.isdir(directoryname)):
         os.system("mkdir " + directoryname)
     pass
