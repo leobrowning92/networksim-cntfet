@@ -1,11 +1,11 @@
 #!/bin/bash
 # this dictates the number of measurements to be made, and for what densities
-mkdir data_8-12_800x
-cd data_8-12_800x
+mkdir data_8-12_1700x
+cd data_8-12_1700x
 omap=0
-for step in {0..800}
+for step in {0..16}
 do
-    density=$(echo 8+0.005*$step | bc)
+    density=$(echo 8+0.25*$step | bc)
     n=$(echo $density*3600 | bc)
     n=${n%.*}
     for x in {1..100}
