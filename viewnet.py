@@ -25,7 +25,8 @@ def open_data(path):
                 except:
                     print ("ERROR calculating onoff for device seed : {}".format(device))
     df['relative_maxclust']=df.maxclust/df.sticks
-    df = df[['seed', 'sticks', 'scaling', 'density', 'current', 'gatevoltage', 'gate', 'onoff', 'nclust', 'maxclust', 'relative_maxclust', 'fname', 'onoffmap', 'runtime', 'element']]
+    df['logonoff']=np.log10(df.onoff)
+    df = df[['seed', 'sticks', 'scaling', 'density', 'current', 'gatevoltage', 'gate', 'onoff','logonoff', 'nclust', 'maxclust', 'relative_maxclust', 'fname', 'onoffmap', 'runtime', 'element']]
 
     return df
 
