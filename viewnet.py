@@ -2,12 +2,33 @@ import argparse, os, time,traceback,sys
 import numpy as np
 import pandas as pd
 import matplotlib
-matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 import matplotlib.patches as patches
+import matplotlib.tri as tri
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import networkx as nx
 from percolation import StickCollection ,CNTDevice
+
+def open_data(path):
+    df=pd.read_csv(path)
+    for device in df.seed.drop_duplicates():
+        if len(df[df.seed==device])==1:
+            pass
+        else:
+            for gatetype in ['back','partial','total']:
+                try:
+                    singlechipmask=(df.seed==device)&(df.gate==gatetype)
+                    on=df.loc[singlechipmask&(df.gatevoltage==-10),'current'].values[0]
+                    off=df.loc[singlechipmask&(df.gatevoltage==10),'current'].values[0]
+                    df.loc[singlechipmask,'onoff']=on/off
+                except:
+                    print ("ERROR calculating onoff for device seed : {}".format(device))
+    df['relative_maxclust']=df.maxclust/df.sticks
+    df['logonoff']=np.log10(df.onoff)
+    df = df[['seed', 'sticks', 'scaling', 'density', 'current', 'gatevoltage', 'gate', 'onoff','logonoff', 'nclust', 'maxclust', 'relative_maxclust', 'fname', 'onoffmap', 'runtime', 'element']]
+
+    return df
 
 class Netviewer(CNTDevice):
     def __init__(self,**kwargs):
@@ -16,39 +37,49 @@ class Netviewer(CNTDevice):
 
 
     # from percolation
-    def show_system(self,clustering=True, junctions=True, conduction=True, show=True, save=False,figsize=(6.3,6.3)):
-        fig = plt.figure(figsize=figsize)
-        axes=[fig.add_subplot(2,2,i+1) for i in range(4)]
+    def show_system(self,clustering=True, junctions=True, conduction=True, show=True, save=False,figsize=(6.3,4)):
+        fig, axes = plt.subplots(nrows=2,ncols=3,figsize=figsize, sharex=True, sharey=True, gridspec_kw={'wspace':0.1, 'hspace':0.05})
+        axes=axes.flat
         self.label_clusters()
         if clustering:
             self.show_sticks(ax=axes[0],junctions=False, clusters=True)
-            axes[0].set_title("Cluster labeling")
+            axes[0].set_title("Sticks")
         if junctions:
-            self.show_sticks(ax=axes[1],junctions=True, clusters=False)
-            axes[1].set_title("ms labeling and junctions")
+            self.show_sticks(ax=axes[3],junctions=True, clusters=False)
+            # axes[3].set_title("ms labeling and junctions")
         try:
             if conduction and self.percolating:
-                self.plot_voltages(axes[2])
+                self.plot_voltages(axes[1])
+                self.plot_regions(axes[1])
+                self.plot_currents(axes[2])
                 self.plot_regions(axes[2])
-                self.plot_currents(axes[3])
-                self.plot_regions(axes[3])
-                axes[2].set_title("Voltage")
-                axes[3].set_title("Current")
-            for ax in axes:
-                ax.set_xticklabels(['']+['{:.1f}'.format(i/5*self.scaling) for i in range(6)])
-                ax.set_yticklabels(['']+['{:.1f}'.format(i/5*self.scaling) for i in range(6)])
-                ax.set_ylabel("$\mu m$")
-                ax.set_xlabel("$\mu m$")
-        except:
+                axes[1].set_title("Voltage")
+                axes[2].set_title("Current")
+                self.plot_contour('voltage',ax=axes[4])
+                self.plot_contour('current',ax=axes[5])
+
+        except Exception as e:
+            print(e)
             pass
+        for ax in axes:
+            ax.tick_params(axis='both',direction='in',right=True, top =True)
+        for ax in [axes[0],axes[3]]:
+            ax.set_yticks([0,0.2,0.4,0.6,0.8,1])
+            ax.set_yticklabels(['{:.0f}'.format(i/5*self.scaling) for i in range(6)])
+            ax.set_ylabel("$\mu m$")
+        for ax in [axes[3],axes[4],axes[5]]:
+            ax.set_xticks([0,0.2,0.4,0.6,0.8,1])
+            ax.set_xticklabels(['{:.0f}'.format(i/5*self.scaling) for i in range(6)])
+            ax.set_xlabel("$\mu m$")
         plt.tight_layout()
+        print(save)
         if save:
-            plt.savefig(self.fname+'_'+save+'_plots.png')
+            print("saving system at {}".format(self.fname))
+            plt.savefig(self.fname+'_plots.png')
+            plt.savefig(self.fname+'_plots.pdf')
         if show:
             plt.show()
-        pass
-
-
+        return fig, axes
 
     def show_sticks(self,ax=False, clusters=False, junctions=True):
         sticks=self.sticks
@@ -65,9 +96,9 @@ class Netviewer(CNTDevice):
         collection=LineCollection(sticks.endarray.values,linewidth=0.5,colors=stick_colors)
         ax.add_collection(collection)
         if junctions:
-            isect_cmap={'ms':'g','sm':'g', 'mm':'k','ss':'k','vs':'k','sv':'k','vm':'k','mv':'k'}
+            isect_cmap={'ms':'g','sm':'g', 'mm':'None','ss':'None','vs':'None','sv':' ','vm':'None','mv':'None'}
             isect_colors=[isect_cmap[i] for i in self.intersects.kind]
-            ax.scatter(intersects.x, intersects.y, c=isect_colors, s=20, linewidth=0.5, marker="o",alpha=0.5)
+            ax.scatter(intersects.x, intersects.y, edgecolors=isect_colors, facecolors='None', s=20, linewidth=1, marker="o",alpha=0.8)
         ax.set_xlim((-0.02,1.02))
         ax.set_ylim((-0.02,1.02))
         if not(ax):
@@ -118,7 +149,7 @@ class Netviewer(CNTDevice):
             nodes=nx.draw_networkx_nodes(self.cnet.graph, pos, width=2,nodelist=nodes, node_color='r', node_size=30, ax=ax1)
 
         if current:
-            edges=nx.draw_networkx_edges(self.cnet.graph, pos, width=2, edgelist=edges, edge_color=currents,  edge_cmap=plt.get_cmap('YlGn'), ax=ax1)
+            edges=nx.draw_networkx_edges(self.cnet.graph, pos, width=1, edgelist=edges, edge_color=currents,  edge_cmap=plt.get_cmap('YlGn'), ax=ax1)
         else:
             edges=nx.draw_networkx_edges(self.cnet.graph, pos, width=2, edgelist=edges, edge_color='b', ax=ax1)
 
@@ -140,10 +171,8 @@ class Netviewer(CNTDevice):
 
         edges=nx.draw_networkx_edges(self.cnet.graph, pos, width=2, edgelist=edges, edge_color=currents,  edge_cmap=plt.get_cmap('YlOrRd'), ax=ax1)
 
-        nodes=nx.draw_networkx_nodes(self.cnet.graph, pos, width=2,nodelist=nodes, node_color='k', node_size=2, ax=ax1)
+        nodes=nx.draw_networkx_nodes(self.cnet.graph, pos, width=1,nodelist=nodes, node_color='k', node_size=1, ax=ax1)
         pass
-
-
 
     def plot_voltages(self,ax1,v=False):
         pos={k:self.cnet.graph.nodes[k]['pos'] for k in self.cnet.graph.nodes}
@@ -155,6 +184,64 @@ class Netviewer(CNTDevice):
         nodes=nx.draw_networkx_nodes(self.cnet.graph, pos, width=2,nodelist=nodes, node_color=voltages,  cmap=plt.get_cmap('YlOrRd'), node_size=30, ax=ax1,edgecolors='k')
 
         edges=nx.draw_networkx_edges(self.cnet.graph, pos, width=0.5, edgelist=edges, edge_color='k', ax=ax1)
+        pass
+
+    def plot_contour(self,value,scale=True,ax=False,show=False,save=False,colormap="YlOrRd"):
+        if value=='current':
+            z=np.array(list(nx.get_edge_attributes(self.cnet.graph,value).values()))
+            pos=np.array(list(nx.get_edge_attributes(self.cnet.graph,'pos').values()))
+            label= 'I'
+        if value=='voltage':
+            z=np.array(list(nx.get_node_attributes(self.cnet.graph,value).values()))
+            pos=np.array(list(nx.get_node_attributes(self.cnet.graph,'pos').values()))
+            label= 'V'
+        x=pos[:,0]
+        y=pos[:,1]
+
+
+        #creat grid values
+        xi = np.linspace(0,1,100)
+        yi = np.linspace(0,1,100)
+
+        # Perform linear interpolation of the data (x,y)
+        # on a grid defined by (xi,yi)
+        triang = tri.Triangulation(x, y)
+        interpolator = tri.LinearTriInterpolator(triang, z)
+        Xi, Yi = np.meshgrid(xi, yi)
+        zi = interpolator(Xi, Yi)
+
+        if not(ax):
+            fig, ax = plt.subplots(1,figsize=(6.3,6.3))
+            ax.set_title("{} gate = {:04.1f} V".format(self.gatetype,float(self.gatevoltage)))
+        # ax.contour(xi, yi, zi, 14, linewidths=0.5, colors='k')
+        cntr1 = ax.contourf(xi, yi, zi, 8, cmap=colormap,alpha=0.7)
+        # if not(ax):
+            # fig.colorbar(cntr1, ax=ax,label=value)
+        #     ax.plot(x, y, 'wo', ms=3)
+            # ax.axis((0,1,0,1))
+        if save or show:
+            ax.set_yticks([0,0.2,0.4,0.6,0.8,1])
+            ax.set_yticklabels(['{:.0f}'.format(i/5*self.scaling) for i in range(6)])
+            ax.set_xticks([0,0.2,0.4,0.6,0.8,1])
+            ax.set_xticklabels(['{:.0f}'.format(i/5*self.scaling) for i in range(6)])
+            ax.set_ylabel("$\mu m$")
+            ax.set_xlabel("$\mu m$")
+
+
+        if scale:
+            axins = inset_axes(ax, width="40%",  height="5%", loc=9, bbox_to_anchor=(0, 0, 1, 1), bbox_transform=ax.transAxes, borderpad=0)
+            values=[0,zi.max()]
+            cbar=plt.colorbar(cntr1, cax=axins,ticks=values,format='%.0e', orientation='horizontal')
+            # cbar.set_ticks([cmin+(0.1*range),cmax-(0.1*range)])
+            cbar.set_ticklabels(["{:.1f}".format(values[0]),"{:.0e}".format(values[1])])
+            cbar.set_label(label,labelpad=-10)
+        if show:
+            plt.show()
+        if ax and save:
+            plt.tight_layout()
+            plt.savefig("{}.png".format(save))
+            plt.savefig("{}.pdf".format(save))
+            plt.close()
         pass
 
 if __name__ == "__main__":

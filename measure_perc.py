@@ -17,6 +17,8 @@ def checkdir(directoryname):
       directoryname: directory path to check
     if the directory doesn't exist the directory is created.
     """
+    if not(directoryname):
+        pass
     if not(os.path.isdir(directoryname)):
         os.system("mkdir " + directoryname)
     pass
@@ -35,7 +37,7 @@ def add_voltagemeas(device, data, vgrange=10, vgnum=3):
     data.gatevoltage=gatevoltage
     data.current=current
     return data
-def single_measure(n,scaling,l='exp', dump=False, savedir='test', seed=0, onoffmap=0, v=False, element= LinExpTransistor):
+def single_measure(n,scaling,l='exp', dump=False, savedir='test', seed=0, onoffmap=0, v=False, element= LinExpTransistor,vgrange=10,vgnum=3):
     datacol=['sticks', 'scaling', 'density', 'current', 'gatevoltage','gate', 'nclust', 'maxclust', 'fname','onoffmap', 'seed', 'runtime', 'element']
     checkdir(savedir)
     start = timer()
@@ -45,13 +47,13 @@ def single_measure(n,scaling,l='exp', dump=False, savedir='test', seed=0, onoffm
     d=n/scaling**2
     if not(seed):
         seed=np.random.randint(low=0,high=2**32)
-    fname=os.path.join(savedir,"n{:05d}_d{:2.1f}_seed{:010d}".format(n,d,seed))
+    fname=os.path.join(savedir,"mnet{:2.2f}_s{}_l{}_om{}_el{}_seed{:010d}".format(d,scaling,l,onoffmap,elements.index(element),seed))
     data=pd.DataFrame(columns = datacol)
     if v:
         print("=== measurement start ===\nn{:05d}_d{:2.1f}_seed{:010d}".format( n, d, seed))
 
     #device created
-    device=perc.CNTDevice(n,scaling=scaling,notes='run',l=l,seed=seed,onoffmap=onoffmap,element=element)
+    device=perc.CNTDevice(n=n,scaling=scaling,notes='run',l=l,seed=seed,onoffmap=onoffmap,element=element)
     if v:
         print("=== physical device made t = {:0.2}".format(timer()-start))
         print("percolating : {}".format(device.percolating))
@@ -81,7 +83,7 @@ def single_measure(n,scaling,l='exp', dump=False, savedir='test', seed=0, onoffm
 
     # perform gate voltage sweeps on all gate configurations
     if device.percolating:
-        data=add_voltagemeas(device, data, vgrange=10, vgnum=3)
+        data=add_voltagemeas(device, data, vgrange=vgrange, vgnum=vgnum)
         if v:
             print("=== gate sweeps complete t = {:0.2}".format(timer()-start))
     else:
@@ -238,11 +240,13 @@ if __name__ == '__main__':
     parser.add_argument("--cores",type=int,default=1)
     parser.add_argument("--start",type=int)
     parser.add_argument("--step",type=int,default=0)
-    parser.add_argument('-n',"--number",type=int)
+    parser.add_argument('-n',"--number",type=int,default=500)
     parser.add_argument("--scaling",type=int,default=5)
     parser.add_argument("--seed",type=int,default=0)
     parser.add_argument("--onoffmap",type=int,default=0,help ="choose from:\n 0 = only intertube ms junctions switch")
     parser.add_argument("--element",type=int,default=0, help="Conduction element to be used in the network. choose from :\n {}".format({0:FermiDiracTransistor,1:LinExpTransistor}))
+    parser.add_argument("--vgrange",type=int,default=10,help ="the absolute value of the vg range. vgpoints=np.linspace(-vgrange,vgrange,vgnum)")
+    parser.add_argument("--vgnum",type=int,default=3,help ="number of voltage points to measure within --vgrange. vgpoints=np.linspace(-vgrange,vgrange,vgnum)")
 
     args = parser.parse_args()
 
@@ -253,4 +257,4 @@ if __name__ == '__main__':
         else:
             measure_async(args.cores, args.start, args.step, args.number,args.scaling, args.save,args.onoffmap)
     elif args.function=="singlecore":
-        single_measure(args.number, args.scaling, savedir=args.directory, dump=args.save,v=args.verbose, element = elements[args.element], onoffmap=args.onoffmap,seed=args.seed)
+        single_measure(args.number, args.scaling, savedir=args.directory, dump=args.save, v=args.verbose, element = elements[args.element], onoffmap=args.onoffmap, seed=args.seed, vgrange=args.vgrange, vgnum=args.vgnum)

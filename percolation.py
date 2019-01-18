@@ -2,20 +2,23 @@ import argparse, os, time,traceback,sys
 import numpy as np
 import pandas as pd
 import matplotlib
-from cnet import ConductionNetwork, Resistor, FermiDiracTransistor
+from cnet import ConductionNetwork, Resistor, FermiDiracTransistor, LinExpTransistor
 import networkx as nx
 import scipy.spatial as spatial
 from timeit import default_timer as timer
 from datetime import datetime
 
-
+class TestClass(object):
+    def __init__(self):
+        print("testclass initialized")
+        self.testattribute=1
 
 class StickCollection(object):
     """
 
     """
     def __init__(self, n=2,scaling=5, l='exp', pm=0.135 , fname='', directory='data', notes='', seed=0,
-    onoffmap=0, element = FermiDiracTransistor):
+    onoffmap=0, element = LinExpTransistor):
         self.scaling=scaling
         self.n=n
         self.pm=pm
@@ -37,6 +40,7 @@ class StickCollection(object):
             self.make_cnet()
             self.fname=self.make_fname()
         else:
+            self.fname=fname
             self.load_system(os.path.join(directory,fname))
 
     def get_info(self):
@@ -228,21 +232,25 @@ class StickCollection(object):
     def load_system(self,fname,network=True):
         # need to incorporate intelligent filename reading if we want
         # to be able to display files without manually imputting scaling
-        print("loading sticks")
+        # print("loading sticks")
         self.sticks=pd.read_csv(fname+'_sticks.csv',index_col=0)
-        print("recalculating endpoints")
+        # print("recalculating endpoints")
         self.sticks.endarray=[self.get_ends(row) for row in self.sticks.values]
-        print("loading intersects")
+        # print("loading intersects")
         self.intersects=pd.read_csv(fname+'_intersects.csv',index_col=0)
         if network:
-            print("making cnet")
+            # print("making cnet")
             self.make_cnet()
 
 
 
 class CNTDevice(StickCollection):
-    def __init___(self,**kwargs):
-        super(CNTDevice, self).__init__(**kwargs)
+    def __init__(self,**kwargs):
+        super().__init__(**kwargs)
+        self.gatetype='back'
+        self.gatevoltage=0
+    def dummy(self):
+        print("dummy ran")
     def global_gate(self,vg):
         self.cnet.set_global_gate(vg)
         self.cnet.update()
@@ -252,7 +260,10 @@ class CNTDevice(StickCollection):
         self.cnet.update()
         return sum(self.cnet.source_currents)
     def gate(self,vg,gate):
-        self.global_gate(0)
+        self.gatetype=gate
+        self.gatevoltage=vg
+        self.cnet.gate_areas=[]
+        self.cnet.set_global_gate(0)
         if gate =='back':
             self.global_gate(vg)
         elif gate == 'partial':
