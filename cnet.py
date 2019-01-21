@@ -1,3 +1,17 @@
+#!/usr/bin/env python3
+"""
+    File name: viewnet.py
+    Author: Leo Browning
+    email: leobrowning92@gmail.com
+    Date created: 02/09/2017 (DD/MM/YYYY)
+    Python Version: 3.5
+    Description:
+    Helper module with all of the electrical information for netsim.py.
+    Includes classes for the conducting elements (transistors, resistors, etc)
+    and the conduction network class which actually solves the network for
+    the current and voltage using multi nodal analysis (MNA)
+"""
+
 import argparse
 import numpy as np
 import networkx as nx
