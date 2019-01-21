@@ -1,3 +1,14 @@
+#!/usr/bin/env python3
+"""
+    File name: netsim.py
+    Author: Leo Browning
+    email: leobrowning92@gmail.com
+    Date created: 02/09/2017 (DD/MM/YYYY)
+    Python Version: 3.5
+    Description:
+    Core module which generates the physical network of sticks which is used to
+    produce the electrical network. The total physical and electrical network is included in the RandomConductingNetwork class. the specific class RandomCNTNetwork is a special case of RandomConductingNetwork.
+"""
 import argparse, os, time,traceback,sys
 import numpy as np
 import pandas as pd
@@ -8,12 +19,7 @@ import scipy.spatial as spatial
 from timeit import default_timer as timer
 from datetime import datetime
 
-class TestClass(object):
-    def __init__(self):
-        print("testclass initialized")
-        self.testattribute=1
-
-class StickCollection(object):
+class RandomConductingNetwork(object):
     """
 
     """
@@ -242,9 +248,7 @@ class StickCollection(object):
             # print("making cnet")
             self.make_cnet()
 
-
-
-class CNTDevice(StickCollection):
+class RandomCNTNetwork(RandomConductingNetwork):
     def __init__(self,**kwargs):
         super().__init__(**kwargs)
         self.gatetype='back'
@@ -272,10 +276,6 @@ class CNTDevice(StickCollection):
             self.local_gate(vg,[0.217,0.5,0.167,1.2])
         return sum(self.cnet.source_currents)
 
-
-
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-n',"--number",type=int)
@@ -299,14 +299,14 @@ if __name__ == "__main__":
 
 
     elif args.test:
-        collection=StickCollection(args.number,l=args.length,pm=args.pm,scaling=args.scaling)
-        collection.make_trivial_sticks()
-        collection.show_system()
+        cond_system=RandomConductingNetwork(args.number,l=args.length,pm=args.pm,scaling=args.scaling)
+        cond_system.make_trivial_sticks()
+        cond_system.show_system()
     else:
-        collection=StickCollection(n=args.number,l=args.length,pm=args.pm,scaling=args.scaling,fname=args.fname)
+        cond_system=RandomConductingNetwork(n=args.number,l=args.length,pm=args.pm,scaling=args.scaling,fname=args.fname)
         if args.show:
-            collection.show_system(save=args.save)
+            cond_system.show_system(save=args.save)
         if args.save:
-            collection.save_system()
+            cond_system.save_system()
 
         # print(len(collection.sticks.cluster.drop_duplicates()))

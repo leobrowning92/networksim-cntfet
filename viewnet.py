@@ -1,3 +1,14 @@
+#!/usr/bin/env python3
+"""
+    File name: viewnet.py
+    Author: Leo Browning
+    email: leobrowning92@gmail.com
+    Date created: 02/09/2017 (DD/MM/YYYY)
+    Python Version: 3.5
+    Description:
+    Module used for visualization of the network systems generated using
+    netsim.py
+"""
 import argparse, os, time,traceback,sys
 import numpy as np
 import pandas as pd
@@ -8,7 +19,7 @@ import matplotlib.patches as patches
 import matplotlib.tri as tri
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import networkx as nx
-from percolation import StickCollection ,CNTDevice
+from netsim import RandomConductingNetwork ,RandomCNTNetwork
 
 def open_data(path):
     df=pd.read_csv(path)
@@ -30,12 +41,10 @@ def open_data(path):
 
     return df
 
-class Netviewer(CNTDevice):
+class CNTNetviewer(RandomCNTNetwork):
     def __init__(self,**kwargs):
-        super(Netviewer, self).__init__(**kwargs)
+        super(CNTNetviewer, self).__init__(**kwargs)
         self.label_clusters()
-
-
     # from percolation
     def show_system(self,clustering=True, junctions=True, conduction=True, show=True, save=False,figsize=(6.3,4)):
         fig, axes = plt.subplots(nrows=2,ncols=3,figsize=figsize, sharex=True, sharey=True, gridspec_kw={'wspace':0.1, 'hspace':0.05})
@@ -72,7 +81,6 @@ class Netviewer(CNTDevice):
             ax.set_xticklabels(['{:.0f}'.format(i/5*self.scaling) for i in range(6)])
             ax.set_xlabel("$\mu m$")
         plt.tight_layout()
-        print(save)
         if save:
             print("saving system at {}".format(self.fname))
             plt.savefig(self.fname+'_plots.png')
@@ -251,7 +259,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.test:
-        collection=StickCollection(500)
-        collection.save_system()
-        netview=Netviewer(fname=(os.path.basename(collection.fname)))
+        cond_network=RandomConductingNetwork(500)
+        cond_network.save_system()
+        netview=CNTNetviewer(fname=(os.path.basename(cond_network.fname)))
         netview.show_system()
